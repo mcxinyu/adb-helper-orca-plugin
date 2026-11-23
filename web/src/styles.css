@@ -15,6 +15,24 @@ body {
 
 .adb-helper { display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
 
+.tab-bar { display: flex; flex-wrap: wrap; gap: 4px; flex: none; border-bottom: 1px solid var(--orca-border, rgba(128,128,128,0.5)); padding-bottom: 4px; }
+.tab-btn { font-size: 11px; padding: 4px 7px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--orca-foreground, #1a1a1a); cursor: pointer; }
+.tab-btn:hover { background: var(--orca-accent-background, rgba(26,115,232,0.12)); }
+.tab-btn.active { border-color: var(--orca-accent, #1a73e8); background: var(--orca-accent-background, rgba(26,115,232,0.14)); font-weight: 700; }
+.tab-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.tab-content > section { min-height: 0; }
+.sub-title { font-size: 12px; margin: 10px 0 6px; color: var(--orca-foreground, #1a1a1a); }
+.record-limit { max-width: 200px; margin: 8px 0; }
+.pkg-list { max-height: 240px; overflow-y: auto; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; margin: 6px 0; }
+.pkg-item { display: block; width: 100%; text-align: left; border: none; background: transparent; color: var(--orca-foreground, #1a1a1a); font-family: monospace; font-size: 11px; padding: 4px 8px; cursor: pointer; }
+.pkg-item:hover { background: var(--orca-accent-background, rgba(26,115,232,0.12)); }
+.pkg-item.selected { background: var(--orca-accent-background, rgba(26,115,232,0.18)); font-weight: 700; }
+.install-field input { width: 100%; box-sizing: border-box; font: inherit; font-size: 11px; padding: 5px 7px; margin: 4px 0; border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px; background: var(--orca-input-background, transparent); color: var(--orca-foreground, #1a1a1a); }
+.output-block { white-space: pre-wrap; word-break: break-all; font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: var(--orca-background, transparent); border: 1px solid var(--orca-border, rgba(128,128,128,0.4)); border-radius: 5px; padding: 6px; max-height: 200px; overflow-y: auto; }
+.cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
+.cmd-grid button { font-size: 11px; padding: 8px 4px; }
+.shot-preview { max-width: 100%; max-height: 60vh; object-fit: contain; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; display: block; }
+
 .header { display: flex; align-items: center; justify-content: space-between; }
 .header h1 { font-size: 15px; margin: 0; color: var(--orca-foreground, #1a1a1a); }
 .lang { font-size: 12px; display: flex; align-items: center; gap: 4px; color: var(--orca-foreground, #1a1a1a); }

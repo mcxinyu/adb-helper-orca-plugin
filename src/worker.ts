@@ -1,9 +1,32 @@
 // ADB Helper 的受信任 worker：面板请求处理、设备/详情查询、问 AI，以及基于 Orca 终端的 logcat 流。
 
 import type { OrcaWorkerApi } from 'orca/worker'
+import { spawn } from 'node:child_process'
+import { readFile, unlink } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import './protocol'
 import type { CommandResult, DeviceDetail, RequestErrorCode } from './protocol'
-import { getDeviceDetailViaAdb } from './adb'
+import {
+  buildClearAppDataArgs,
+  buildConnectArgs,
+  buildDisconnectArgs,
+  buildInstallApkArgs,
+  buildListPackagesArgs,
+  buildPullArgs,
+  buildScreenrecordArgs,
+  buildScreenshotArgs,
+  buildStartAppArgs,
+  buildStopAppArgs,
+  buildUninstallArgs,
+  getDeviceDetailViaAdb,
+  getPaletteCommand,
+  isValidConnectTarget,
+  isValidPackageName,
+  PALETTE_COMMANDS,
+  runAdb,
+  runAdbBuffer,
+} from './adb'
 import { discoverDevices, toCommandResult } from './discovery'
 
 const SETTINGS = {
@@ -21,7 +44,20 @@ const STORAGE_KEYS = {
   logcatSerial: 'logcatSerial',
   logcatSeqBase: 'logcatSeqBase',
   logcatLastLines: 'logcatLastLines',
+  screenrecordState: 'screenrecordState',
+  connectHistory: 'connectHistory',
 } as const
+
+const MAX_CONNECT_HISTORY = 10
+
+interface ScreenrecordState {
+  serial: string
+  devicePath: string
+  process: ReturnType<typeof spawn>
+  startedAt: number
+}
+
+let screenrecord: ScreenrecordState | undefined
 
 function failure<T>(code: RequestErrorCode, message: string): CommandResult<T> {
   return { ok: false, code, message }
@@ -78,6 +114,20 @@ async function closeLogcatTerminal(orca: OrcaWorkerApi): Promise<void> {
 }
 
 export default function activate(orca: OrcaWorkerApi): void {
+  // 恢复/清理上次 worker 遗留的录屏状态（worker 回收会带走子进程，仅剩设备临时文件）。
+  void (async () => {
+    const leftover = await orca.storage.get(STORAGE_KEYS.screenrecordState).catch(() => null)
+    if (leftover && typeof leftover === 'object' && leftover !== null) {
+      const rec = leftover as { serial?: string; devicePath?: string }
+      if (rec.serial && rec.devicePath) {
+        const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+        await runAdb(adbPath, ['-s', rec.serial, 'shell', 'rm', rec.devicePath]).catch(() => undefined)
+      }
+      await orca.storage.delete(STORAGE_KEYS.screenrecordState).catch(() => undefined)
+      orca.log('已清理上次遗留的录屏状态')
+    }
+  })()
+
   // 配置读取与语言写入。
   orca.panels.handle('adb.getConfig', async () => ({
     locale: await getSetting(orca, SETTINGS.locale, 'zh-CN'),
@@ -112,6 +162,184 @@ export default function activate(orca: OrcaWorkerApi): void {
       return failure<DeviceDetail>('action_failed', errorMessage(error))
     }
   })
+
+  // 截图：adb exec-out screencap -p，返回 base64（JSON 可传），面板侧转 ArrayBuffer 保存。
+  orca.panels.handle('adb.screenshot', async ({ serial }) => {
+    type ShotResult = { base64: string; mimeType: string }
+    if (!serial) return failure<ShotResult>('invalid_params', '请选择设备')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      const buffer = await runAdbBuffer(adbPath, buildScreenshotArgs(serial))
+      return success<ShotResult>({ base64: buffer.toString('base64'), mimeType: 'image/png' })
+    } catch (error) {
+      return failure<ShotResult>('action_failed', `截图失败：${errorMessage(error)}`)
+    }
+  })
+
+  // 列出已安装包。
+  orca.panels.handle('adb.listPackages', async ({ serial }) => {
+    type Result = { packages: string[] }
+    if (!serial) return failure<Result>('invalid_params', '请选择设备')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      const raw = await runAdb(adbPath, buildListPackagesArgs(serial))
+      const packages = raw.split(/\r?\n/)
+        .map((line) => line.trim().replace(/^package:/, ''))
+        .filter((line) => line.length > 0)
+        .sort()
+      return success<Result>({ packages })
+    } catch (error) {
+      return failure<Result>('action_failed', `列包失败：${errorMessage(error)}`)
+    }
+  })
+
+  // 应用操作：启动/停止/清除/卸载。
+  orca.panels.handle('adb.appAction', async ({ serial, action, pkg }) => {
+    type Result = { output: string }
+    if (!serial) return failure<Result>('invalid_params', '请选择设备')
+    if (!isValidPackageName(pkg)) return failure<Result>('invalid_params', '包名不合法')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    const builders = {
+      start: buildStartAppArgs, stop: buildStopAppArgs, clear: buildClearAppDataArgs, uninstall: buildUninstallArgs,
+    }
+    try {
+      const output = await runAdb(adbPath, builders[action](serial, pkg))
+      return success<Result>({ output: output.trim() })
+    } catch (error) {
+      return failure<Result>('action_failed', errorMessage(error))
+    }
+  })
+
+  // 安装 APK：路径由用户输入（可含空格），作为单个参数传给 adb。
+  orca.panels.handle('adb.installApk', async ({ serial, apkPath }) => {
+    type Result = { output: string }
+    if (!serial) return failure<Result>('invalid_params', '请选择设备')
+    if (!apkPath || !apkPath.trim()) return failure<Result>('invalid_params', '请输入 APK 路径')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      const output = await runAdb(adbPath, buildInstallApkArgs(serial, apkPath.trim()))
+      return success<Result>({ output: output.trim() })
+    } catch (error) {
+      return failure<Result>('action_failed', `安装失败：${errorMessage(error)}`)
+    }
+  })
+
+  // 无线连接历史读取。
+  orca.panels.handle('adb.connectHistory', async () => {
+    const value = await orca.storage.get(STORAGE_KEYS.connectHistory)
+    const history = Array.isArray(value) ? (value as string[]).filter((x) => typeof x === 'string') : []
+    return { history }
+  })
+
+  async function addToConnectHistory(orca: OrcaWorkerApi, target: string): Promise<void> {
+    const value = await orca.storage.get(STORAGE_KEYS.connectHistory)
+    const history = Array.isArray(value) ? (value as string[]).filter((x) => typeof x === 'string') : []
+    const next = [target, ...history.filter((x) => x !== target)].slice(0, MAX_CONNECT_HISTORY)
+    await orca.storage.set(STORAGE_KEYS.connectHistory, next).catch(() => undefined)
+  }
+
+  orca.panels.handle('adb.connect', async ({ target }) => {
+    type Result = { output: string }
+    if (!isValidConnectTarget(target)) return failure<Result>('invalid_params', '目标格式应为 IP:端口')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      const output = await runAdb(adbPath, buildConnectArgs(target))
+      await addToConnectHistory(orca, target)
+      return success<Result>({ output: output.trim() })
+    } catch (error) {
+      return failure<Result>('action_failed', `连接失败：${errorMessage(error)}`)
+    }
+  })
+
+  orca.panels.handle('adb.disconnect', async ({ target }) => {
+    type Result = { output: string }
+    if (!isValidConnectTarget(target)) return failure<Result>('invalid_params', '目标格式应为 IP:端口')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      const output = await runAdb(adbPath, buildDisconnectArgs(target))
+      return success<Result>({ output: output.trim() })
+    } catch (error) {
+      return failure<Result>('action_failed', `断开失败：${errorMessage(error)}`)
+    }
+  })
+
+  orca.panels.handle('adb.listPaletteCommands', async () => ({
+    commands: PALETTE_COMMANDS.map((c) => c.id),
+  }))
+
+  orca.panels.handle('adb.runPaletteCommand', async ({ serial, commandId }) => {
+    type Result = { output: string }
+    if (!serial) return failure<Result>('invalid_params', '请选择设备')
+    const cmd = getPaletteCommand(commandId)
+    if (!cmd) return failure<Result>('invalid_params', '命令不在白名单中')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      const output = await runAdb(adbPath, cmd.args(serial))
+      return success<Result>({ output: output.trim() })
+    } catch (error) {
+      return failure<Result>('action_failed', errorMessage(error))
+    }
+  })
+
+  // 录屏：开始（spawn screenrecord 写设备临时文件）。
+  orca.panels.handle('adb.startScreenrecord', async ({ serial, maxSeconds }) => {
+    type StartResult = { started: true; devicePath: string }
+    if (!serial) return failure<StartResult>('invalid_params', '请选择设备')
+    if (screenrecord) return failure<StartResult>('conflict', '已有录屏正在进行')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    const limit = Math.min(Math.max(maxSeconds ?? 30, 1), 180)
+    const devicePath = `/sdcard/adb-helper-${Date.now()}.mp4`
+    try {
+      const child = spawn(adbPath, buildScreenrecordArgs(serial, devicePath, limit), { windowsHide: true })
+      screenrecord = { serial, devicePath, process: child, startedAt: Date.now() }
+      await orca.storage.set(STORAGE_KEYS.screenrecordState, {
+        serial, devicePath, startedAt: screenrecord.startedAt,
+      }).catch(() => undefined)
+      child.on('close', () => {
+        // 到达时限自然结束时保留 state，让 stop/status 仍能拉取文件。
+      })
+      child.on('error', () => {
+        // 错误在 stop/status 时通过文件是否存在体现。
+      })
+      return success<StartResult>({ started: true as const, devicePath })
+    } catch (error) {
+      return failure<StartResult>('action_failed', `无法开始录屏：${errorMessage(error)}`)
+    }
+  })
+
+  // 录屏：停止、拉取文件并返回 base64。
+  orca.panels.handle('adb.stopScreenrecord', async () => {
+    type StopResult = { base64: string; mimeType: string; devicePath: string }
+    if (!screenrecord) return failure<StopResult>('conflict', '当前没有录屏')
+    const current = screenrecord
+    screenrecord = undefined
+    await orca.storage.delete(STORAGE_KEYS.screenrecordState).catch(() => undefined)
+    try {
+      if (!current.process.killed) current.process.kill()
+    } catch {
+      // 进程可能已退出。
+    }
+    // 等待进程完全退出后文件才完整。
+    await new Promise((resolve) => setTimeout(resolve, 600))
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    const localPath = join(tmpdir(), `adb-helper-${Date.now()}.mp4`)
+    try {
+      await runAdb(adbPath, buildPullArgs(current.serial, current.devicePath, localPath), 30_000)
+      const buffer = await readFile(localPath)
+      await unlink(localPath).catch(() => undefined)
+      // 清理设备上的临时文件。
+      await runAdb(adbPath, ['-s', current.serial, 'shell', 'rm', current.devicePath]).catch(() => undefined)
+      return success<StopResult>({ base64: buffer.toString('base64'), mimeType: 'video/mp4', devicePath: current.devicePath })
+    } catch (error) {
+      await unlink(localPath).catch(() => undefined)
+      return failure<StopResult>('action_failed', `录屏保存失败：${errorMessage(error)}`)
+    }
+  })
+
+  orca.panels.handle('adb.screenrecordStatus', async () => ({
+    recording: !!screenrecord,
+    ...(screenrecord ? { serial: screenrecord.serial, devicePath: screenrecord.devicePath } : {}),
+  }))
 
   // 启动 logcat：在 Orca 终端中运行 adb logcat，不受 worker 回收影响。
   orca.panels.handle('adb.startLogcat', async ({ serial }) => {

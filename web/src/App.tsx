@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getStrings, type Locale } from './i18n'
 import { parseLogLine } from './logHighlight'
+import ScreenshotTab from './ScreenshotTab'
+import ScreenrecordTab from './ScreenrecordTab'
+import AppsTab from './AppsTab'
+import WirelessTab from './WirelessTab'
+import CommandsTab from './CommandsTab'
 import {
   askAi,
   getConfig,
@@ -23,6 +28,8 @@ import {
   type LogcatStatePayload,
 } from './orcaApi'
 
+type TabId = 'log' | 'screenshot' | 'screenrecord' | 'apps' | 'wireless' | 'commands'
+
 interface LogEntry {
   seq: number
   line: string
@@ -35,6 +42,7 @@ function failureMessage(result: CommandResult<unknown>, fallback: string): strin
 
 export default function App() {
   const [locale, setLocaleState] = useState<Locale>('zh-CN')
+  const [activeTab, setActiveTab] = useState<TabId>('log')
   const [devices, setDevices] = useState<DeviceInfo[]>([])
   const [source, setSource] = useState<'primary' | 'fallback'>('primary')
   const [selectedSerial, setSelectedSerial] = useState<string>('')
@@ -421,6 +429,8 @@ export default function App() {
     }
   }
 
+  const selectedDeviceOnline = devices.some((d) => d.serial === selectedSerial && d.state === 'device')
+
   return (
     <div className="adb-helper">
       <header className="header">
@@ -486,6 +496,28 @@ export default function App() {
         </section>
       )}
 
+      <nav className="tab-bar" role="tablist" aria-label={s.appTitle}>
+        {([
+          ['log', s.tabLog],
+          ['screenshot', s.tabScreenshot],
+          ['screenrecord', s.tabScreenrecord],
+          ['apps', s.tabApps],
+          ['wireless', s.tabWireless],
+          ['commands', s.tabCommands],
+        ] as [TabId, string][]).map(([id, label]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={activeTab === id}
+            className={`tab-btn ${activeTab === id ? 'active' : ''}`}
+            onClick={() => setActiveTab(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="tab-content" style={{ display: activeTab === 'log' ? undefined : 'none' }}>
       <section className="logcat-section">
         <div className="section-header">
           <h2>{s.logcatTitle}</h2>
@@ -551,6 +583,23 @@ export default function App() {
           )}
         </div>
       </section>
+      </div>
+
+      <div className="tab-content" style={{ display: activeTab === 'screenshot' ? undefined : 'none' }}>
+        <ScreenshotTab s={s} locale={locale} selectedSerial={selectedSerial} deviceOnline={selectedDeviceOnline} onNotice={setNotice} />
+      </div>
+      <div className="tab-content" style={{ display: activeTab === 'screenrecord' ? undefined : 'none' }}>
+        <ScreenrecordTab s={s} locale={locale} selectedSerial={selectedSerial} deviceOnline={selectedDeviceOnline} onNotice={setNotice} />
+      </div>
+      <div className="tab-content" style={{ display: activeTab === 'apps' ? undefined : 'none' }}>
+        <AppsTab s={s} locale={locale} selectedSerial={selectedSerial} deviceOnline={selectedDeviceOnline} />
+      </div>
+      <div className="tab-content" style={{ display: activeTab === 'wireless' ? undefined : 'none' }}>
+        <WirelessTab s={s} locale={locale} onConnected={() => void refreshDevices()} />
+      </div>
+      <div className="tab-content" style={{ display: activeTab === 'commands' ? undefined : 'none' }}>
+        <CommandsTab s={s} locale={locale} selectedSerial={selectedSerial} deviceOnline={selectedDeviceOnline} />
+      </div>
 
       {selectedText.trim() && selectionPos && (
         <div

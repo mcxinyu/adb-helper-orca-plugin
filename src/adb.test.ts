@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildAdbCommand, parseDevicesOutput } from './adb'
+import { buildAdbCommand, buildClearAppDataArgs, buildConnectArgs, buildDisconnectArgs, buildInstallApkArgs, buildListPackagesArgs, buildPullArgs, buildScreenrecordArgs, buildScreenshotArgs, buildStartAppArgs, buildStopAppArgs, buildUninstallArgs, getPaletteCommand, isValidConnectTarget, isValidPackageName, PALETTE_COMMANDS, parseDevicesOutput } from './adb'
 
 test('buildAdbCommand 保留含空格路径为单个命令', () => {
   const result = buildAdbCommand('C:\\Program Files\\Android\\adb.exe', ['devices', '-l'])
@@ -12,6 +12,44 @@ test('buildAdbCommand 支持 POSIX 路径', () => {
   const result = buildAdbCommand('/opt/android sdk/adb', ['shell', 'getprop', 'ro.product.model'])
   assert.equal(result.command, '/opt/android sdk/adb')
   assert.deepEqual(result.args, ['shell', 'getprop', 'ro.product.model'])
+})
+
+test('buildScreenshotArgs 构造 exec-out screencap 命令', () => {
+  assert.deepEqual(buildScreenshotArgs('emulator-5554'), ['-s', 'emulator-5554', 'exec-out', 'screencap', '-p'])
+})
+
+test('buildScreenrecordArgs 含时限与设备路径', () => {
+  assert.deepEqual(buildScreenrecordArgs('dev1', '/sdcard/a.mp4', 45), ['-s', 'dev1', 'shell', 'screenrecord', '--time-limit', '45', '/sdcard/a.mp4'])
+})
+
+test('buildPullArgs 含本地路径', () => {
+  assert.deepEqual(buildPullArgs('dev1', '/sdcard/a.mp4', 'C:\\tmp\\a.mp4'), ['-s', 'dev1', 'pull', '/sdcard/a.mp4', 'C:\\tmp\\a.mp4'])
+})
+
+test('无线连接目标校验与命令', () => {
+  assert.equal(isValidConnectTarget('192.168.1.100:5555'), true)
+  assert.equal(isValidConnectTarget('999.1.1.1:5555'), false)
+  assert.equal(isValidConnectTarget('192.168.1.100'), false)
+  assert.equal(isValidConnectTarget('192.168.1.100:70000'), false)
+  assert.deepEqual(buildConnectArgs('192.168.1.100:5555'), ['connect', '192.168.1.100:5555'])
+  assert.deepEqual(buildDisconnectArgs('192.168.1.100:5555'), ['disconnect', '192.168.1.100:5555'])
+})
+test('命令面板白名单', () => {
+  assert.ok(PALETTE_COMMANDS.length >= 5)
+  assert.equal(getPaletteCommand('battery')?.args('dev1')[0], '-s')
+  assert.equal(getPaletteCommand('battery')?.args('dev1')[1], 'dev1')
+  assert.equal(getPaletteCommand('unknown'), undefined)
+})
+test('应用管理命令构造与包名校验', () => {
+  assert.deepEqual(buildListPackagesArgs('dev1'), ['-s', 'dev1', 'shell', 'pm', 'list', 'packages'])
+  assert.deepEqual(buildStartAppArgs('dev1', 'com.x.app'), ['-s', 'dev1', 'shell', 'monkey', '-p', 'com.x.app', '-c', 'android.intent.category.LAUNCHER', '1'])
+  assert.deepEqual(buildStopAppArgs('dev1', 'com.x.app'), ['-s', 'dev1', 'shell', 'am', 'force-stop', 'com.x.app'])
+  assert.deepEqual(buildClearAppDataArgs('dev1', 'com.x.app'), ['-s', 'dev1', 'shell', 'pm', 'clear', 'com.x.app'])
+  assert.deepEqual(buildInstallApkArgs('dev1', 'C:\\my apps\\a.apk'), ['-s', 'dev1', 'install', '-r', 'C:\\my apps\\a.apk'])
+  assert.deepEqual(buildUninstallArgs('dev1', 'com.x.app'), ['-s', 'dev1', 'uninstall', 'com.x.app'])
+  assert.equal(isValidPackageName('com.x.app'), true)
+  assert.equal(isValidPackageName('bad;cmd'), false)
+  assert.equal(isValidPackageName(''), false)
 })
 
 test('parseDevicesOutput 解析在线设备与型号', () => {

@@ -23,6 +23,7 @@ export type RequestErrorCode =
   | 'adb_unavailable'
   | 'no_workspace'
   | 'cancelled'
+  | 'conflict'
 
 export interface CommandFailure {
   ok: false
@@ -80,6 +81,50 @@ declare module 'orca' {
     'adb.setLocale': {
       input: { locale: string }
       output: { locale: string }
+    }
+    'adb.screenshot': {
+      input: { serial: string }
+      output: CommandResult<{ base64: string; mimeType: string }>
+    }
+    'adb.startScreenrecord': {
+      input: { serial: string; maxSeconds?: number }
+      output: CommandResult<{ started: true; devicePath: string }>
+    }
+    'adb.stopScreenrecord': {
+      output: CommandResult<{ base64: string; mimeType: string; devicePath: string }>
+    }
+    'adb.screenrecordStatus': {
+      output: { recording: boolean; serial?: string; devicePath?: string }
+    }
+    'adb.listPackages': {
+      input: { serial: string }
+      output: CommandResult<{ packages: string[] }>
+    }
+    'adb.appAction': {
+      input: { serial: string; action: 'start' | 'stop' | 'clear' | 'uninstall'; pkg: string }
+      output: CommandResult<{ output: string }>
+    }
+    'adb.installApk': {
+      input: { serial: string; apkPath: string }
+      output: CommandResult<{ output: string }>
+    }
+    'adb.connect': {
+      input: { target: string }
+      output: CommandResult<{ output: string }>
+    }
+    'adb.disconnect': {
+      input: { target: string }
+      output: CommandResult<{ output: string }>
+    }
+    'adb.connectHistory': {
+      output: { history: string[] }
+    }
+    'adb.runPaletteCommand': {
+      input: { serial: string; commandId: string }
+      output: CommandResult<{ output: string }>
+    }
+    'adb.listPaletteCommands': {
+      output: { commands: string[] }
     }
   }
 

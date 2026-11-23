@@ -35,6 +35,9 @@ interface PluginBridge {
 
 interface FrameApi {
   plugin: PluginBridge
+  host: {
+    call(method: string, params?: unknown): Promise<unknown>
+  }
 }
 
 declare global {
@@ -109,6 +112,68 @@ export async function listSessions(): Promise<CommandResult<{ sessions: SessionO
 
 export async function askAi(agent: string, prompt: string, sessionId?: string): Promise<CommandResult<AskAiResult>> {
   return (await bridge().request('adb.askAi', { agent, prompt, sessionId })) as CommandResult<AskAiResult>
+}
+
+export async function screenshot(serial: string): Promise<CommandResult<{ base64: string; mimeType: string }>> {
+  return (await bridge().request('adb.screenshot', { serial })) as CommandResult<{ base64: string; mimeType: string }>
+}
+
+export async function startScreenrecord(serial: string, maxSeconds?: number): Promise<CommandResult<{ started: true; devicePath: string }>> {
+  return (await bridge().request('adb.startScreenrecord', { serial, maxSeconds })) as CommandResult<{ started: true; devicePath: string }>
+}
+
+export async function stopScreenrecord(): Promise<CommandResult<{ base64: string; mimeType: string; devicePath: string }>> {
+  return (await bridge().request('adb.stopScreenrecord')) as CommandResult<{ base64: string; mimeType: string; devicePath: string }>
+}
+
+export async function screenrecordStatus(): Promise<{ recording: boolean; serial?: string; devicePath?: string }> {
+  return (await bridge().request('adb.screenrecordStatus')) as { recording: boolean; serial?: string; devicePath?: string }
+}
+
+export async function listPackages(serial: string): Promise<CommandResult<{ packages: string[] }>> {
+  return (await bridge().request('adb.listPackages', { serial })) as CommandResult<{ packages: string[] }>
+}
+
+export async function appAction(serial: string, action: 'start' | 'stop' | 'clear' | 'uninstall', pkg: string): Promise<CommandResult<{ output: string }>> {
+  return (await bridge().request('adb.appAction', { serial, action, pkg })) as CommandResult<{ output: string }>
+}
+
+export async function installApk(serial: string, apkPath: string): Promise<CommandResult<{ output: string }>> {
+  return (await bridge().request('adb.installApk', { serial, apkPath })) as CommandResult<{ output: string }>
+}
+
+export async function connectDevice(target: string): Promise<CommandResult<{ output: string }>> {
+  return (await bridge().request('adb.connect', { target })) as CommandResult<{ output: string }>
+}
+
+export async function disconnectDevice(target: string): Promise<CommandResult<{ output: string }>> {
+  return (await bridge().request('adb.disconnect', { target })) as CommandResult<{ output: string }>
+}
+
+export async function connectHistory(): Promise<{ history: string[] }> {
+  return (await bridge().request('adb.connectHistory')) as { history: string[] }
+}
+
+export async function listPaletteCommands(): Promise<{ commands: string[] }> {
+  return (await bridge().request('adb.listPaletteCommands')) as { commands: string[] }
+}
+
+export async function runPaletteCommand(serial: string, commandId: string): Promise<CommandResult<{ output: string }>> {
+  return (await bridge().request('adb.runPaletteCommand', { serial, commandId })) as CommandResult<{ output: string }>
+}
+
+/** base64 转 ArrayBuffer，供 files.saveAs 使用。 */
+export function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
+/** 通过 Orca 文件保存对话框保存二进制数据；需用户点击触发。 */
+export async function saveFile(data: ArrayBuffer, suggestedName: string, mimeType: string): Promise<boolean> {
+  const result = await window.orca.host.call('files.saveAs', { data, suggestedName, mimeType }) as { status: string }
+  return result.status === 'saved'
 }
 
 export interface DeviceChangedPayload {

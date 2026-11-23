@@ -52,6 +52,59 @@ export interface Strings {
   sendLabel: string
   cancelLabel: string
   loadingOptions: string
+  tabLog: string
+  tabScreenshot: string
+  tabScreenrecord: string
+  tabApps: string
+  tabWireless: string
+  tabCommands: string
+  takeScreenshot: string
+  saveScreenshot: string
+  shotPreview: string
+  shotIdle: string
+  shotBusy: string
+  shotNoDevice: string
+  shotSaved: string
+  shotCancelled: string
+  startRecord: string
+  stopRecord: string
+  saveRecord: string
+  recordIdle: string
+  recordBusy: string
+  recordNoDevice: string
+  recordLimitLabel: string
+  recordActive: string
+  recordSaved: string
+  recordCancelled: string
+  recordLimitReached: string
+  appsNoDevice: string
+  appsRefresh: string
+  appsFilter: string
+  appsInstall: string
+  appsInstallHint: string
+  appsStart: string
+  appsStop: string
+  appsClear: string
+  appsUninstall: string
+  appsResult: string
+  appsBusy: string
+  wirelessInput: string
+  wirelessConnect: string
+  wirelessDisconnect: string
+  wirelessHistory: string
+  wirelessNoHistory: string
+  wirelessInvalid: string
+  wirelessResult: string
+  wirelessBusy: string
+  cmdNoDevice: string
+  cmdDeviceInfo: string
+  cmdModel: string
+  cmdBattery: string
+  cmdPackages: string
+  cmdIpAddress: string
+  cmdMemInfo: string
+  cmdResult: string
+  cmdBusy: string
 }
 
 const zhCN: Strings = {
@@ -106,6 +159,59 @@ const zhCN: Strings = {
   sendLabel: '发送',
   cancelLabel: '取消',
   loadingOptions: '加载中…',
+  tabLog: '实时日志',
+  tabScreenshot: '截图',
+  tabScreenrecord: '录屏',
+  tabApps: '应用管理',
+  tabWireless: '无线连接',
+  tabCommands: '命令面板',
+  takeScreenshot: '截取屏幕',
+  saveScreenshot: '保存到文件',
+  shotPreview: '截图预览',
+  shotIdle: '尚未截图',
+  shotBusy: '截图中…',
+  shotNoDevice: '请先选择一台在线设备',
+  shotSaved: '截图已保存',
+  shotCancelled: '已取消保存',
+  startRecord: '开始录屏',
+  stopRecord: '停止录屏',
+  saveRecord: '保存视频',
+  recordIdle: '未录制',
+  recordBusy: '处理中…',
+  recordNoDevice: '请先选择一台在线设备',
+  recordLimitLabel: '录制时长上限',
+  recordActive: '录制中',
+  recordSaved: '视频已保存',
+  recordCancelled: '已取消保存',
+  recordLimitReached: '已达到时长上限，录制自动结束',
+  appsNoDevice: '请先选择一台在线设备',
+  appsRefresh: '刷新应用列表',
+  appsFilter: '过滤包名',
+  appsInstall: '安装 APK',
+  appsInstallHint: '输入本机 APK 完整路径（插件无法浏览文件）',
+  appsStart: '启动',
+  appsStop: '停止',
+  appsClear: '清除数据',
+  appsUninstall: '卸载',
+  appsResult: '结果',
+  appsBusy: '处理中…',
+  wirelessInput: '设备地址 (IP:端口)',
+  wirelessConnect: '连接',
+  wirelessDisconnect: '断开',
+  wirelessHistory: '连接历史',
+  wirelessNoHistory: '暂无历史',
+  wirelessInvalid: '格式应为 IP:端口（如 192.168.1.100:5555）',
+  wirelessResult: '结果',
+  wirelessBusy: '处理中…',
+  cmdNoDevice: '请先选择一台在线设备',
+  cmdDeviceInfo: 'Android 版本',
+  cmdModel: '设备型号',
+  cmdBattery: '电池信息',
+  cmdPackages: '第三方应用',
+  cmdIpAddress: 'IP 地址',
+  cmdMemInfo: '内存信息',
+  cmdResult: '输出',
+  cmdBusy: '执行中',
 }
 
 const en: Strings = {
@@ -160,6 +266,59 @@ const en: Strings = {
   sendLabel: 'Send',
   cancelLabel: 'Cancel',
   loadingOptions: 'Loading…',
+  tabLog: 'Live logs',
+  tabScreenshot: 'Screenshot',
+  tabScreenrecord: 'Screen record',
+  tabApps: 'Apps',
+  tabWireless: 'Wireless',
+  tabCommands: 'Commands',
+  takeScreenshot: 'Take screenshot',
+  saveScreenshot: 'Save to file',
+  shotPreview: 'Screenshot preview',
+  shotIdle: 'No screenshot yet',
+  shotBusy: 'Capturing…',
+  shotNoDevice: 'Select an online device first',
+  shotSaved: 'Screenshot saved',
+  shotCancelled: 'Save cancelled',
+  startRecord: 'Start recording',
+  stopRecord: 'Stop recording',
+  saveRecord: 'Save video',
+  recordIdle: 'Not recording',
+  recordBusy: 'Working…',
+  recordNoDevice: 'Select an online device first',
+  recordLimitLabel: 'Time limit',
+  recordActive: 'Recording',
+  recordSaved: 'Video saved',
+  recordCancelled: 'Save cancelled',
+  recordLimitReached: 'Time limit reached, recording stopped',
+  appsNoDevice: 'Select an online device first',
+  appsRefresh: 'Refresh apps',
+  appsFilter: 'Filter packages',
+  appsInstall: 'Install APK',
+  appsInstallHint: 'Enter full local APK path (file browser unavailable)',
+  appsStart: 'Start',
+  appsStop: 'Stop',
+  appsClear: 'Clear data',
+  appsUninstall: 'Uninstall',
+  appsResult: 'Result',
+  appsBusy: 'Working…',
+  wirelessInput: 'Device address (IP:port)',
+  wirelessConnect: 'Connect',
+  wirelessDisconnect: 'Disconnect',
+  wirelessHistory: 'Connection history',
+  wirelessNoHistory: 'No history',
+  wirelessInvalid: 'Format should be IP:port (e.g. 192.168.1.100:5555)',
+  wirelessResult: 'Result',
+  wirelessBusy: 'Working…',
+  cmdNoDevice: 'Select an online device first',
+  cmdDeviceInfo: 'Android version',
+  cmdModel: 'Device model',
+  cmdBattery: 'Battery info',
+  cmdPackages: 'Third-party apps',
+  cmdIpAddress: 'IP address',
+  cmdMemInfo: 'Memory info',
+  cmdResult: 'Output',
+  cmdBusy: 'Running',
 }
 
 const bundles: Record<Locale, Strings> = { 'zh-CN': zhCN, en }
