@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-23
+goal: Turn the single-view ADB Helper into a tabbed toolbox where device
+  selection is shared and each extra capability is a switchable tab.
