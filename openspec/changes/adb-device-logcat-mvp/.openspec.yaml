@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-23
+goal: Deliver a usable ADB device list plus live logcat stream using a React
+  panel, Orca worker/terminal bridge, and adb server reuse.

@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 12px;
+        font: 13px system-ui, sans-serif;
+        color: var(--orca-foreground);
+        background: var(--orca-background);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ADB Helper</h1>
+    <p id="workspace">Loading…</p>
+    <script>
+      const label = document.getElementById('workspace')
+      async function refresh() {
+        if (!orca.host.has('workspace.readContext')) {
+          label.textContent = 'This Orca cannot read workspace context.'
+          return
+        }
+        try {
+          const context = await orca.host.call('workspace.readContext', {})
+          label.textContent = JSON.stringify(context, null, 2)
+        } catch (error) {
+          label.textContent = error.code + ': ' + error.message
+        }
+      }
+      void refresh()
+    </script>
+  </body>
+</html>
