@@ -4,6 +4,7 @@
   "name": "ADB Helper",
   "version": "0.1.0",
   "description": "Android ADB device management and live logcat inside Orca.",
+  "icon": "assets/icon.png",
   "engines": {
     "orca": ">=1.4.259"
   },
