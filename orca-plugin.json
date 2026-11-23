@@ -3,25 +3,68 @@
   "id": "adb-helper",
   "name": "ADB Helper",
   "version": "0.1.0",
-  "description": "A sidebar panel.",
+  "description": "Android ADB device management and live logcat inside Orca.",
   "engines": {
-    "orca": ">=1.4.246"
+    "orca": ">=1.4.259"
   },
-  "execution": "sandboxed-ui",
+  "execution": "trusted-worker",
   "pluginApi": 1,
+  "main": "src/worker.ts",
   "contributes": {
     "panels": [
       {
         "id": "adb-helper",
         "title": "ADB Helper",
-        "icon": "puzzle",
+        "icon": "terminal",
         "entry": "panel/index.html"
+      }
+    ],
+    "commands": [
+      { "id": "adb.stopLogcat", "title": "ADB Helper: 停止 logcat", "when": "global" }
+    ],
+    "settings": [
+      {
+        "key": "adbPath",
+        "title": "ADB 可执行文件路径",
+        "type": "string",
+        "default": "adb",
+        "description": "adb 可执行文件的路径，可包含空格。"
+      },
+      {
+        "key": "locale",
+        "title": "界面语言",
+        "type": "string",
+        "default": "zh-CN",
+        "enum": ["zh-CN", "en"],
+        "enumLabels": ["简体中文", "English"],
+        "description": "面板显示语言。"
+      },
+      {
+        "key": "logcatTag",
+        "title": "logcat 默认过滤标签",
+        "type": "string",
+        "default": "",
+        "description": "启动 logcat 时附加的 -s 标签过滤，可留空。"
+      },
+      {
+        "key": "askAgent",
+        "title": "“问 AI”使用的 agent",
+        "type": "string",
+        "default": "opencode",
+        "description": "“问 AI”会在 Orca 中启动该 agent 并把选中文本发给它；需为本机已安装且启用的 agent。"
       }
     ]
   },
   "capabilities": [
-    {
-      "kind": "workspace:read"
-    }
+    { "kind": "storage:own" },
+    { "kind": "settings:own" },
+    { "kind": "workspace:read" },
+    { "kind": "workspace:write" },
+    { "kind": "terminal:send" },
+    { "kind": "terminal:read" },
+    { "kind": "agent:launch" },
+    { "kind": "agent:read" },
+    { "kind": "history:read" },
+    { "kind": "notifications:show" }
   ]
 }

@@ -82,3 +82,5 @@ fabric.properties
 # Orca plugin generated
 node_modules/
 .orca/
+.workbuddy/
+logo-design/

@@ -1,35 +1,13 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
   <head>
-    <meta charset="utf-8" />
-    <style>
-      body {
-        margin: 0;
-        padding: 12px;
-        font: 13px system-ui, sans-serif;
-        color: var(--orca-foreground);
-        background: var(--orca-background);
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADB Helper</title>
+    <script type="module" crossorigin src="./assets/index-C_mm_PI2.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BynWRRZk.css">
   </head>
   <body>
-    <h1>ADB Helper</h1>
-    <p id="workspace">Loading…</p>
-    <script>
-      const label = document.getElementById('workspace')
-      async function refresh() {
-        if (!orca.host.has('workspace.readContext')) {
-          label.textContent = 'This Orca cannot read workspace context.'
-          return
-        }
-        try {
-          const context = await orca.host.call('workspace.readContext', {})
-          label.textContent = JSON.stringify(context, null, 2)
-        } catch (error) {
-          label.textContent = error.code + ': ' + error.message
-        }
-      }
-      void refresh()
-    </script>
+    <div id="root"></div>
   </body>
 </html>
