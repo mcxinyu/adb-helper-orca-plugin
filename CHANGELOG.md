@@ -7,6 +7,22 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-24
+
+### 新增
+
+- **实时日志：在终端中打开**——一键把当前 logcat 放到 Orca 终端里查看，控制栏按钮高度统一。
+- **无线连接：设备行断开按钮**——每台无线设备行直接放一个“断开”图标按钮，未选中设备时在实时日志区给出提示。
+
+### 变更
+
+- **实时日志**——清除日志按钮改为默认可见，“在终端中打开”移到控制栏最右。
+- **无线连接**——断开按钮靠右对齐，序列号统一为黑色。
+
+### 修复
+
+- **无线连接**——去掉设备行的横向滚动条，消除型号与断开按钮之间的空档；修复断开按钮溢出边框的问题。
+
 ## [0.2.0] - 2026-11-24
 
 ### 新增
@@ -39,6 +55,7 @@
 - **命令面板**——Android 版本、型号、电池、第三方应用、IP、内存等白名单快捷命令。
 - 中英文界面切换，面板底部固定显示版本号与编译号。
 
-[Unreleased]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/releases/tag/v0.1.0
