@@ -10,17 +10,29 @@ html, body { height: 100%; }
 #root { height: 100%; }
 body {
   margin: 0; padding: 12px; box-sizing: border-box;
-  overflow: hidden; /* 整页不滚动，只有日志区内部滚动 */
+  overflow: hidden; /* 整页不滚动；header/footer 固定，内容区内部滚动 */
 }
 
-.adb-helper { display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
+.adb-helper { display: flex; flex-direction: column; gap: 12px; height: 100%; min-height: 0; box-sizing: border-box; }
+
+.panel-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 2px;
+}
 
 .tab-bar { display: flex; flex-wrap: wrap; gap: 4px; flex: none; border-bottom: 1px solid var(--orca-border, rgba(128,128,128,0.5)); padding-bottom: 4px; }
 .tab-btn { font-size: 11px; padding: 4px 7px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--orca-foreground, #1a1a1a); cursor: pointer; }
 .tab-btn:hover { background: var(--orca-accent-background, rgba(26,115,232,0.12)); }
 .tab-btn.active { border-color: var(--orca-accent, #1a73e8); background: var(--orca-accent-background, rgba(26,115,232,0.14)); font-weight: 700; }
-.tab-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.tab-content { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .tab-content > section { min-height: 0; }
+.device-header-actions { display: flex; gap: 6px; }
+.wireless-panel { padding: 8px; margin: 6px 0; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 6px; background: var(--orca-accent-background, rgba(26,115,232,0.06)); }
 .sub-title { font-size: 12px; margin: 10px 0 6px; color: var(--orca-foreground, #1a1a1a); }
 .record-limit { max-width: 200px; margin: 8px 0; }
 .pkg-list { max-height: 240px; overflow-y: auto; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; margin: 6px 0; }
@@ -28,6 +40,13 @@ body {
 .pkg-item:hover { background: var(--orca-accent-background, rgba(26,115,232,0.12)); }
 .pkg-item.selected { background: var(--orca-accent-background, rgba(26,115,232,0.18)); font-weight: 700; }
 .install-field input { width: 100%; box-sizing: border-box; font: inherit; font-size: 11px; padding: 5px 7px; margin: 4px 0; border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px; background: var(--orca-input-background, transparent); color: var(--orca-foreground, #1a1a1a); }
+.apk-dropzone { border: 1px dashed var(--orca-border, rgba(128,128,128,0.6)); border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
+.apk-dropzone.dragging { border-color: var(--orca-accent, #1a73e8); background: var(--orca-accent-background, rgba(26,115,232,0.10)); }
+.apk-picker-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.perm-row { margin: 6px 0; }
+.perm-row .logcat-controls { margin-top: 4px; }
+.apk-file-input { display: none; }
+.apk-picker-row .muted { margin: 0; font-size: 11px; }
 .output-block { white-space: pre-wrap; word-break: break-all; font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: var(--orca-background, transparent); border: 1px solid var(--orca-border, rgba(128,128,128,0.4)); border-radius: 5px; padding: 6px; max-height: 200px; overflow-y: auto; }
 .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
 .cmd-grid button { font-size: 11px; padding: 8px 4px; }
@@ -44,7 +63,6 @@ body {
 }
 
 section { border-top: 1px solid var(--orca-border, rgba(128,128,128,0.5)); padding-top: 10px; flex: none; }
-.logcat-section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 h2 {
   font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 6px;
   color: var(--orca-foreground, #1a1a1a); font-weight: 600;
@@ -93,7 +111,7 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 .detail dt { font-size: 12px; font-weight: 600; color: var(--orca-foreground, #1a1a1a); }
 .detail dd { margin: 0; font-family: monospace; font-weight: 600; }
 
-.logcat-section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.logcat-section { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .logcat-controls { display: flex; gap: 6px; margin-bottom: 6px; flex: none; }
 .filter {
   width: 100%; box-sizing: border-box; padding: 5px 7px; font: inherit; margin: 4px 0; flex: none;
@@ -158,8 +176,10 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 
 .app-footer {
   flex: none;
-  margin-top: 4px; padding: 8px 4px 0;
+  margin-top: auto;
+  padding: 8px 4px 0;
   border-top: 1px solid var(--orca-border, rgba(128,128,128,0.6));
+  background: var(--orca-background, transparent);
   font-size: 11px; font-weight: 700; text-align: center;
   color: var(--orca-foreground, #1a1a1a);
 }

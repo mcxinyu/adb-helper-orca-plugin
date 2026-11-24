@@ -88,11 +88,26 @@ export interface Strings {
   appsUninstall: string
   appsResult: string
   appsBusy: string
+  appsBrowse: string
+  appsDropHint: string
+  appsFileTooLarge: string
+  appsUploading: string
+  appsPermInput: string
+  appsRevoke: string
+  appsGrant: string
+  appsPermRequired: string
+  appsRevokeAll: string
+  appsRevokeAllResult: string
+  appsRevokeAllNone: string
+  appsRevokeAllRevokedList: string
+  appsRevokeAllFailedList: string
   wirelessInput: string
   wirelessConnect: string
   wirelessDisconnect: string
   wirelessHistory: string
   wirelessNoHistory: string
+  wirelessCurrent: string
+  wirelessNoCurrent: string
   wirelessInvalid: string
   wirelessResult: string
   wirelessBusy: string
@@ -188,18 +203,33 @@ const zhCN: Strings = {
   appsRefresh: '刷新应用列表',
   appsFilter: '过滤包名',
   appsInstall: '安装 APK',
-  appsInstallHint: '输入本机 APK 完整路径（插件无法浏览文件）',
+  appsInstallHint: '输入本机 APK 完整路径，或选择/拖入 APK 文件',
   appsStart: '启动',
   appsStop: '停止',
   appsClear: '清除数据',
   appsUninstall: '卸载',
   appsResult: '结果',
   appsBusy: '处理中…',
+  appsBrowse: '浏览 APK',
+  appsDropHint: '也可把 APK 文件拖到这里',
+  appsFileTooLarge: 'APK 文件过大（最多 512 MB）',
+  appsUploading: '上传中…',
+  appsPermInput: '权限名 (如 android.permission.CAMERA)',
+  appsRevoke: '撤销权限',
+  appsGrant: '授予权限',
+  appsPermRequired: '请输入权限名',
+  appsRevokeAll: '撤销全部权限',
+  appsRevokeAllResult: '已撤销 {revoked} 项，失败 {failed} 项',
+  appsRevokeAllNone: '没有可撤销的运行时权限（只针对已授予的危险权限）',
+  appsRevokeAllRevokedList: '已撤销权限',
+  appsRevokeAllFailedList: '撤销失败（系统权限或不可撤销）',
   wirelessInput: '设备地址 (IP:端口)',
   wirelessConnect: '连接',
   wirelessDisconnect: '断开',
   wirelessHistory: '连接历史',
   wirelessNoHistory: '暂无历史',
+  wirelessCurrent: '当前无线连接设备',
+  wirelessNoCurrent: '暂无无线连接设备',
   wirelessInvalid: '格式应为 IP:端口（如 192.168.1.100:5555）',
   wirelessResult: '结果',
   wirelessBusy: '处理中…',
@@ -295,18 +325,33 @@ const en: Strings = {
   appsRefresh: 'Refresh apps',
   appsFilter: 'Filter packages',
   appsInstall: 'Install APK',
-  appsInstallHint: 'Enter full local APK path (file browser unavailable)',
+  appsInstallHint: 'Enter full local APK path, or choose/drop an APK file',
   appsStart: 'Start',
   appsStop: 'Stop',
   appsClear: 'Clear data',
   appsUninstall: 'Uninstall',
   appsResult: 'Result',
   appsBusy: 'Working…',
+  appsBrowse: 'Browse APK',
+  appsDropHint: 'You can also drop an APK file here',
+  appsFileTooLarge: 'APK file is too large (max 512 MB)',
+  appsUploading: 'Uploading…',
+  appsPermInput: 'Permission (e.g. android.permission.CAMERA)',
+  appsRevoke: 'Revoke Permission',
+  appsGrant: 'Grant Permission',
+  appsPermRequired: 'Please enter a permission name',
+  appsRevokeAll: 'Revoke All Permissions',
+  appsRevokeAllResult: 'Revoked {revoked}, failed {failed}',
+  appsRevokeAllNone: 'No revocable runtime permissions (only granted dangerous permissions)',
+  appsRevokeAllRevokedList: 'Revoked permissions',
+  appsRevokeAllFailedList: 'Failed to revoke (system or non-revocable)',
   wirelessInput: 'Device address (IP:port)',
   wirelessConnect: 'Connect',
   wirelessDisconnect: 'Disconnect',
   wirelessHistory: 'Connection history',
   wirelessNoHistory: 'No history',
+  wirelessCurrent: 'Current wireless devices',
+  wirelessNoCurrent: 'No wireless devices connected',
   wirelessInvalid: 'Format should be IP:port (e.g. 192.168.1.100:5555)',
   wirelessResult: 'Result',
   wirelessBusy: 'Working…',

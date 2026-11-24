@@ -1,0 +1,44 @@
+# 更新日志
+
+本项目所有显著变更都记录在此文件中。
+
+格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
+版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+## [Unreleased]
+
+## [0.2.0] - 2026-11-24
+
+### 新增
+
+- **应用管理：撤销 / 授予权限**——选中应用后输入权限名（如 `android.permission.CAMERA`），可单独撤销或授予该权限。
+- **应用管理：撤销全部权限**——自动解析应用已授予的危险（运行时）权限并逐个撤销，结束后列出已撤销与撤销失败的权限清单。
+- **应用管理：APK 浏览与拖放安装**——可点击“浏览 APK”或把 APK 拖入安装区，文件分片上传到 worker 临时目录后执行 `adb install -r`；仍保留手动输入完整路径作为兜底。
+
+### 变更
+
+- 应用管理面板布局调整：安装 APK 区上移到刷新按钮上方，操作更顺手。
+- 撤销全部权限的结果展示更清晰：分别列出“已撤销权限”和“撤销失败”的权限名，便于核对。
+
+### 修复
+
+- 修复应用“启动 / 停止”等操作报 `Invalid input` 的回归：权限操作拆分为独立请求 `adb.permissionAction`，避免可选字段影响基础操作的输入校验。
+- 修复“撤销全部权限”始终提示“没有可撤销的运行时权限”：兼容 dumpsys 输出的 CRLF 行尾与小米等 ROM 的 `权限名: granted=true` 冒号格式，并且只解析 `runtime permissions:` 段，不再误抓 `install permissions:` 里撤不掉的权限。
+
+## [0.1.0] - 2026-11-23
+
+### 新增
+
+- 首个可用版本：React 面板 + 受信任 Node.js worker 的 ADB Helper Orca 插件。
+- **设备管理**——列出已连接设备、在线状态、选中设备详情（型号、Android 版本）。
+- **实时日志（logcat）**——在 Orca 终端运行 logcat，日志按优先级/字段着色，默认跟随最新、主动滚动后停止跟随，支持过滤与“问 AI”。
+- **截图**——面板内预览 PNG，可通过系统对话框保存到本地。
+- **录屏**——可选时长上限（最长 180 秒），停止后可保存 MP4。
+- **应用管理**——刷新并过滤包名列表，选中后可启动 / 停止 / 清除数据 / 卸载；安装 APK（手输路径）。
+- **无线连接**——输入 `IP:端口` 连接 / 断开，显示当前无线设备与连接历史，可重连。
+- **命令面板**——Android 版本、型号、电池、第三方应用、IP、内存等白名单快捷命令。
+- 中英文界面切换，面板底部固定显示版本号与编译号。
+
+[Unreleased]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/releases/tag/v0.1.0

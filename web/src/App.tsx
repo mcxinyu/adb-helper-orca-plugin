@@ -28,7 +28,7 @@ import {
   type LogcatStatePayload,
 } from './orcaApi'
 
-type TabId = 'log' | 'screenshot' | 'screenrecord' | 'apps' | 'wireless' | 'commands'
+type TabId = 'log' | 'screenshot' | 'screenrecord' | 'apps' | 'commands'
 
 interface LogEntry {
   seq: number
@@ -43,6 +43,7 @@ function failureMessage(result: CommandResult<unknown>, fallback: string): strin
 export default function App() {
   const [locale, setLocaleState] = useState<Locale>('zh-CN')
   const [activeTab, setActiveTab] = useState<TabId>('log')
+  const [wirelessOpen, setWirelessOpen] = useState<boolean>(false)
   const [devices, setDevices] = useState<DeviceInfo[]>([])
   const [source, setSource] = useState<'primary' | 'fallback'>('primary')
   const [selectedSerial, setSelectedSerial] = useState<string>('')
@@ -444,13 +445,20 @@ export default function App() {
         </label>
       </header>
 
-      {notice && <div className="notice">{notice}</div>}
+      <div className="panel-scroll">
+        {notice && <div className="notice">{notice}</div>}
 
       <section>
         <div className="section-header">
           <h2>{s.deviceListTitle}</h2>
-          <button onClick={() => void refreshDevices()}>{s.refresh}</button>
+          <div className="device-header-actions">
+            <button onClick={() => setWirelessOpen((v) => !v)} aria-expanded={wirelessOpen}>{s.tabWireless}</button>
+            <button onClick={() => void refreshDevices()}>{s.refresh}</button>
+          </div>
         </div>
+        {wirelessOpen && (
+          <WirelessTab s={s} locale={locale} devices={devices} onConnected={() => void refreshDevices()} />
+        )}
         <div className="source-badge">
           {source === 'primary' ? s.sourcePrimary : s.sourceFallback}
         </div>
@@ -502,7 +510,6 @@ export default function App() {
           ['screenshot', s.tabScreenshot],
           ['screenrecord', s.tabScreenrecord],
           ['apps', s.tabApps],
-          ['wireless', s.tabWireless],
           ['commands', s.tabCommands],
         ] as [TabId, string][]).map(([id, label]) => (
           <button
@@ -594,11 +601,9 @@ export default function App() {
       <div className="tab-content" style={{ display: activeTab === 'apps' ? undefined : 'none' }}>
         <AppsTab s={s} locale={locale} selectedSerial={selectedSerial} deviceOnline={selectedDeviceOnline} />
       </div>
-      <div className="tab-content" style={{ display: activeTab === 'wireless' ? undefined : 'none' }}>
-        <WirelessTab s={s} locale={locale} onConnected={() => void refreshDevices()} />
-      </div>
       <div className="tab-content" style={{ display: activeTab === 'commands' ? undefined : 'none' }}>
         <CommandsTab s={s} locale={locale} selectedSerial={selectedSerial} deviceOnline={selectedDeviceOnline} />
+      </div>
       </div>
 
       {selectedText.trim() && selectionPos && (

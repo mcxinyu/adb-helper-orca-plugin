@@ -104,9 +104,34 @@ declare module 'orca' {
       input: { serial: string; action: 'start' | 'stop' | 'clear' | 'uninstall'; pkg: string }
       output: CommandResult<{ output: string }>
     }
+    // 权限操作单列一个请求：permission 必填，避免可选字段影响 start/stop 等的输入校验。
+    'adb.permissionAction': {
+      input: { serial: string; action: 'revoke' | 'grant'; pkg: string; permission: string }
+      output: CommandResult<{ output: string }>
+    }
+    'adb.revokeAllPermissions': {
+      input: { serial: string; pkg: string }
+      output: CommandResult<{ revoked: string[]; failed: string[] }>
+    }
     'adb.installApk': {
       input: { serial: string; apkPath: string }
       output: CommandResult<{ output: string }>
+    }
+    'adb.installApkUploadStart': {
+      input: { fileName: string }
+      output: { uploadId: string }
+    }
+    'adb.installApkUploadChunk': {
+      input: { uploadId: string; base64: string }
+      output: { received: number }
+    }
+    'adb.installApkUploadFinish': {
+      input: { uploadId: string; serial: string }
+      output: CommandResult<{ output: string }>
+    }
+    'adb.installApkUploadCancel': {
+      input: { uploadId: string }
+      output: { cancelled: true }
     }
     'adb.connect': {
       input: { target: string }

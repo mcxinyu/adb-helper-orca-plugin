@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildAdbCommand, buildClearAppDataArgs, buildConnectArgs, buildDisconnectArgs, buildInstallApkArgs, buildListPackagesArgs, buildPullArgs, buildScreenrecordArgs, buildScreenshotArgs, buildStartAppArgs, buildStopAppArgs, buildUninstallArgs, getPaletteCommand, isValidConnectTarget, isValidPackageName, PALETTE_COMMANDS, parseDevicesOutput } from './adb'
+import { buildAdbCommand, buildClearAppDataArgs, buildConnectArgs, buildDisconnectArgs, buildDumpPackageArgs, buildGrantPermissionArgs, buildInstallApkArgs, buildListPackagesArgs, buildPullArgs, buildRevokePermissionArgs, buildScreenrecordArgs, buildScreenshotArgs, buildStartAppArgs, buildStopAppArgs, buildUninstallArgs, getPaletteCommand, isValidConnectTarget, isValidPackageName, PALETTE_COMMANDS, parseDevicesOutput, parseGrantedRuntimePermissions } from './adb'
 
 test('buildAdbCommand 保留含空格路径为单个命令', () => {
   const result = buildAdbCommand('C:\\Program Files\\Android\\adb.exe', ['devices', '-l'])
@@ -47,6 +47,9 @@ test('应用管理命令构造与包名校验', () => {
   assert.deepEqual(buildClearAppDataArgs('dev1', 'com.x.app'), ['-s', 'dev1', 'shell', 'pm', 'clear', 'com.x.app'])
   assert.deepEqual(buildInstallApkArgs('dev1', 'C:\\my apps\\a.apk'), ['-s', 'dev1', 'install', '-r', 'C:\\my apps\\a.apk'])
   assert.deepEqual(buildUninstallArgs('dev1', 'com.x.app'), ['-s', 'dev1', 'uninstall', 'com.x.app'])
+  assert.deepEqual(buildRevokePermissionArgs('dev1', 'com.x.app', 'android.permission.CAMERA'), ['-s', 'dev1', 'shell', 'pm', 'revoke', 'com.x.app', 'android.permission.CAMERA'])
+  assert.deepEqual(buildGrantPermissionArgs('dev1', 'com.x.app', 'android.permission.CAMERA'), ['-s', 'dev1', 'shell', 'pm', 'grant', 'com.x.app', 'android.permission.CAMERA'])
+  assert.deepEqual(buildDumpPackageArgs('dev1', 'com.x.app'), ['-s', 'dev1', 'shell', 'dumpsys', 'package', 'com.x.app'])
   assert.equal(isValidPackageName('com.x.app'), true)
   assert.equal(isValidPackageName('bad;cmd'), false)
   assert.equal(isValidPackageName(''), false)
@@ -89,4 +92,49 @@ test('parseDevicesOutput 跳过畸形行与 daemon 提示', () => {
   assert.deepEqual(parseDevicesOutput(raw), [
     { serial: 'ghi789', state: 'unknown' },
   ])
+})
+
+test('parseGrantedRuntimePermissions 只解析 runtime 段已授予的权限', () => {
+  const raw = [
+    'Package [com.x.app] (1234):',
+    '  requested permissions:',
+    '    android.permission.INTERNET',
+    '  install permissions:',
+    '    android.permission.INTERNET: granted=true',
+    '    android.permission.SYSTEM_ALERT_WINDOW: granted=false',
+    '  runtime permissions:',
+    '    android.permission.CAMERA: granted=true, flags=[ USER_SENSITIVE_WHEN_GRANTED]',
+    '    android.permission.ACCESS_FINE_LOCATION: granted=true, flags=[ USER_SENSITIVE_WHEN_GRANTED]',
+    '    android.permission.RECORD_AUDIO: granted=false, flags=[ USER_SENSITIVE_WHEN_GRANTED]',
+    '    android.permission.READ_EXTERNAL_STORAGE: granted=false',
+    '  enabledComponents:',
+    '    com.x.app.MainActivity',
+  ].join('\n')
+  // 只取 runtime 段里 granted=true 的危险权限；install 段（INTERNET）与未授予的不算
+  assert.deepEqual(parseGrantedRuntimePermissions(raw), [
+    'android.permission.CAMERA',
+    'android.permission.ACCESS_FINE_LOCATION',
+  ])
+})
+
+test('parseGrantedRuntimePermissions 兼容旧式括号格式', () => {
+  const raw = [
+    '  runtime permissions:',
+    '    android.permission.CAMERA (granted=true)',
+    '    android.permission.RECORD_AUDIO (granted=false)',
+  ].join('\n')
+  assert.deepEqual(parseGrantedRuntimePermissions(raw), ['android.permission.CAMERA'])
+})
+
+test('parseGrantedRuntimePermissions 没有 runtime 段返回空数组', () => {
+  const raw = [
+    '  install permissions:',
+    '    android.permission.INTERNET: granted=true',
+  ].join('\n')
+  // install 段的权限撤不掉，即便 granted=true 也不返回
+  assert.deepEqual(parseGrantedRuntimePermissions(raw), [])
+})
+
+test('parseGrantedRuntimePermissions 空输出返回空数组', () => {
+  assert.deepEqual(parseGrantedRuntimePermissions(''), [])
 })

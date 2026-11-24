@@ -134,12 +134,50 @@ export async function listPackages(serial: string): Promise<CommandResult<{ pack
   return (await bridge().request('adb.listPackages', { serial })) as CommandResult<{ packages: string[] }>
 }
 
-export async function appAction(serial: string, action: 'start' | 'stop' | 'clear' | 'uninstall', pkg: string): Promise<CommandResult<{ output: string }>> {
+export async function appAction(
+  serial: string,
+  action: 'start' | 'stop' | 'clear' | 'uninstall',
+  pkg: string,
+): Promise<CommandResult<{ output: string }>> {
   return (await bridge().request('adb.appAction', { serial, action, pkg })) as CommandResult<{ output: string }>
+}
+
+/** 撤销/授予单个权限。与 appAction 分离，permission 必填，避免可选字段影响输入校验。 */
+export async function permissionAction(
+  serial: string,
+  action: 'revoke' | 'grant',
+  pkg: string,
+  permission: string,
+): Promise<CommandResult<{ output: string }>> {
+  return (await bridge().request('adb.permissionAction', { serial, action, pkg, permission })) as CommandResult<{ output: string }>
+}
+
+/** 撤销应用全部已授予的运行时权限（dangerous 权限），返回成功与失败列表。 */
+export async function revokeAllPermissions(
+  serial: string,
+  pkg: string,
+): Promise<CommandResult<{ revoked: string[]; failed: string[] }>> {
+  return (await bridge().request('adb.revokeAllPermissions', { serial, pkg })) as CommandResult<{ revoked: string[]; failed: string[] }>
 }
 
 export async function installApk(serial: string, apkPath: string): Promise<CommandResult<{ output: string }>> {
   return (await bridge().request('adb.installApk', { serial, apkPath })) as CommandResult<{ output: string }>
+}
+
+export async function installApkUploadStart(fileName: string): Promise<{ uploadId: string }> {
+  return (await bridge().request('adb.installApkUploadStart', { fileName })) as { uploadId: string }
+}
+
+export async function installApkUploadChunk(uploadId: string, base64: string): Promise<{ received: number }> {
+  return (await bridge().request('adb.installApkUploadChunk', { uploadId, base64 })) as { received: number }
+}
+
+export async function installApkUploadFinish(uploadId: string, serial: string): Promise<CommandResult<{ output: string }>> {
+  return (await bridge().request('adb.installApkUploadFinish', { uploadId, serial })) as CommandResult<{ output: string }>
+}
+
+export async function installApkUploadCancel(uploadId: string): Promise<void> {
+  await bridge().request('adb.installApkUploadCancel', { uploadId })
 }
 
 export async function connectDevice(target: string): Promise<CommandResult<{ output: string }>> {

@@ -105,6 +105,58 @@ export function buildInstallApkArgs(serial: string, apkPath: string): string[] {
 export function buildUninstallArgs(serial: string, pkg: string): string[] {
   return ['-s', serial, 'uninstall', pkg]
 }
+/** 构造撤销权限命令：pm revoke <pkg> <permission> */
+export function buildRevokePermissionArgs(serial: string, pkg: string, permission: string): string[] {
+  return ['-s', serial, 'shell', 'pm', 'revoke', pkg, permission]
+}
+/** 构造授予权限命令：pm grant <pkg> <permission> */
+export function buildGrantPermissionArgs(serial: string, pkg: string, permission: string): string[] {
+  return ['-s', serial, 'shell', 'pm', 'grant', pkg, permission]
+}
+/** 构造查询包信息的 dumpsys 命令，用于解析已授予的运行时权限。 */
+export function buildDumpPackageArgs(serial: string, pkg: string): string[] {
+  return ['-s', serial, 'shell', 'dumpsys', 'package', pkg]
+}
+/**
+ * 从 dumpsys package 输出中解析"已授予的运行时权限"。
+ * 只看 `runtime permissions:` 段（危险权限，pm revoke 才有效），
+ * 跳过 `install permissions:` 段（INTERNET 等安装期权限，撤不掉）。
+ * 兼容两种 ROM 格式：
+ *   - `android.permission.X (granted=true)`        旧式括号格式
+ *   - `android.permission.X: granted=true, flags=[...]`  新式冒号格式（小米等）
+ * 只取 granted=true 的权限。
+ */
+export function parseGrantedRuntimePermissions(dumpsysOutput: string): string[] {
+  const result: string[] = []
+  // dumpsys 输出常为 CRLF 行尾，先逐行 trim 掉 \r 和缩进，避免段头/标记匹配失败
+  const lines = dumpsysOutput.split('\n').map((l) => l.trim())
+  let inRuntime = false
+  // 段头：trim 后以字母开头且以冒号结尾（如 runtime permissions: / enabledComponents:）
+  for (const line of lines) {
+    if (!line) continue
+    const isSectionHeader = /^[A-Za-z]/.test(line) && line.endsWith(':')
+    if (isSectionHeader) {
+      inRuntime = line.startsWith('runtime permissions')
+      continue
+    }
+    if (!inRuntime) continue
+    // 格式 A：权限名 (granted=true)
+    let m = /^android\.permission\.[A-Za-z0-9_.]+\s*\(granted=true\)$/.exec(line)
+    if (m) {
+      // 取括号前的完整权限名，如 android.permission.CAMERA
+      const full = m[0].split(/\s+\(/)[0]
+      if (!result.includes(full)) result.push(full)
+      continue
+    }
+    // 格式 B：权限名: granted=true, flags=[...]（flags 可能换行，但 granted 标记总在同一行）
+    m = /^android\.permission\.[A-Za-z0-9_.]+:\s*granted=true\b/.exec(line)
+    if (m) {
+      const full = line.split(':')[0]
+      if (!result.includes(full)) result.push(full)
+    }
+  }
+  return result
+}
 /** 校验包名：仅允许字母数字、点、下划线。 */
 export function isValidPackageName(pkg: string): boolean {
   return /^[A-Za-z0-9._]+$/.test(pkg) && pkg.length > 0

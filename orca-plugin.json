@@ -2,7 +2,7 @@
   "manifestVersion": 2,
   "id": "adb-helper",
   "name": "ADB Helper",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Android ADB device management and live logcat inside Orca.",
   "icon": "assets/icon.png",
   "engines": {

@@ -10,13 +10,13 @@ Orca host API 提供 `files.saveAs`（panel 侧，接受 string 或 ArrayBuffer�
 
 **目标：**
 - 面板改为 Tab 布局，设备列表/选择常驻，所有 Tab 共享同一选中设备。
-- 六个 Tab：实时日志、截图、录屏、应用管理、无线连接、命令面板。
+- 五个 Tab：实时日志、截图、录屏、应用管理、命令面板；无线连接作为设备区常驻入口（见决策 5）。
 - 复用现有 adb 桥接与 worker 请求模式；所有 adb 命令仍由 worker 的 Node 进程执行。
 - 中英文 i18n 与版本栏在 Tab 化后保持一致。
 
 **非目标：**
 - 不替用户安装/配置 adb 或启动 adb server。
-- 不实现文件选择器（Orca 插件 API 没有 `files.open`）；APK 路径通过插件设置或面板内文本输入提供。
+- 使用 HTML 面板原生文件输入/拖放读取 APK 字节；Orca 插件 host API 没有 `files.open`，JS 也拿不到完整本地路径。选中文件通过 `plugin.request` 分片（约 45 KiB/片）传给 worker，worker 追加写入系统临时文件，再执行 `adb -s <serial> install -r <tempPath>`，结束后删除临时文件。手动输入完整路径仍保留，作为更直接的安装方式。
 - 不在本变更中支持远程（SSH/WSL）设备。
 - 不持久化截图/录屏文件内容到插件 storage（只保存到用户选定的本地路径）。
 - 不实现 adb 之外的平台工具（如 fastboot）。
@@ -35,13 +35,13 @@ worker 执行 `adb -s <serial> exec-out screencap -p`，把 stdout 以 base64 �
 
 录屏是长操作且产生二进制流。worker 用 `adb -s <serial> shell screenrecord <path>` 写入 adb 可执行目录下的临时文件（插件 storage 目录或系统临时目录）；开始/停止作为两个请求，停止后 worker 读取文件为 base64 返回 panel，panel 用 `files.saveAs` 保存。录屏期间面板显示状态与计时。由于 worker 可能被回收，录屏进程与临时文件路径写入 storage 以便恢复状态；若 worker 重启后进程不在，标记失败并清理临时文件。
 
-### 4. 应用管理：文本输入代替文件选择器
+### 4. 应用管理：文件选择/拖放 + 手动路径兜底
 
-Orca 插件没有打开文件对话框的 host API。安装 APK 通过面板内输入框让用户填写本机 APK 路径（可含空格），worker 执行 `adb -s <serial> install -r "<path>"`。其余操作用固定命令：`pm list packages`、`<package>` 启动/停止（`am start`/`am force-stop`）、`pm clear`。返回原始输出展示。
+Orca 插件 host API 没有打开文件对话框的 host API，且浏览器 `File` 对象不给完整本地路径。安装 APK 通过 HTML 面板原生文件输入/拖放读取字节，分片传给 worker 写入临时文件后执行 `adb -s <serial> install -r "<tempPath>"`；同时保留面板内输入框让用户填写本机 APK 路径（可含空格），worker 直接执行 `adb -s <serial> install -r "<path>"`。其余操作用固定命令：`pm list packages`、`<package>` 启动/停止（`am start`/`am force-stop`）、`pm clear`。返回原始输出展示。
 
-### 5. 无线连接：命令 + 历史
+### 5. 无线连接：设备区常驻入口 + 历史 + 当前无线设备
 
-`adb connect <ip:port>` / `adb disconnect <ip:port>`，连接历史存 `storage:own`，面板提供输入、连接、断开、历史点击重连。
+无线连接与“选中的设备”无关（它本身就是建立连接），因此不作为 Tab，而是放在顶部设备区“无线连接”按钮展开的面板中。`adb connect`/`adb disconnect` 执行后刷新设备列表；面板显示“当前无线连接设备”（从设备列表中筛出 serial 为 `IP:端口` 形式的项，可点击填入目标并断开）与连接历史（storage:own，点击重连）。
 
 ### 6. 命令面板：白名单命令
 
@@ -56,7 +56,7 @@ Orca 插件没有打开文件对话框的 host API。安装 APK 通过面板内�
 - **[截图数据大] →** 限制预览分辨率（adb screencap 原始尺寸可能很大），base64 仅用于单次预览与保存，不入 storage。
 - **[录屏文件可能超过 64 MiB] →** 限制录屏时长（如默认 30 秒、上限 180 秒），超限提示用户分次录制。
 - **[worker 回收中断录屏] →** 录屏状态与临时路径写 storage；面板轮询状态，worker 重启后若能找到文件则允许保存，否则报错清理。
-- **[APK 路径需手输] →** 提供清晰提示与示例路径；不承诺文件选择器。
+- **[APK 路径需手输或选择] →** 提供路径输入框、浏览按钮和拖放提示；选中文件走分片上传，手输路径直接交给 adb。
 - **[命令面板注入风险] →** 只用固定白名单命令，serial 与参数做转义/校验。
 
 ## 迁移计划

@@ -2,7 +2,7 @@
 
 import type { OrcaWorkerApi } from 'orca/worker'
 import { spawn } from 'node:child_process'
-import { readFile, unlink } from 'node:fs/promises'
+import { open, readFile, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import './protocol'
@@ -11,9 +11,12 @@ import {
   buildClearAppDataArgs,
   buildConnectArgs,
   buildDisconnectArgs,
+  buildDumpPackageArgs,
+  buildGrantPermissionArgs,
   buildInstallApkArgs,
   buildListPackagesArgs,
   buildPullArgs,
+  buildRevokePermissionArgs,
   buildScreenrecordArgs,
   buildScreenshotArgs,
   buildStartAppArgs,
@@ -24,6 +27,7 @@ import {
   isValidConnectTarget,
   isValidPackageName,
   PALETTE_COMMANDS,
+  parseGrantedRuntimePermissions,
   runAdb,
   runAdbBuffer,
 } from './adb'
@@ -58,6 +62,12 @@ interface ScreenrecordState {
 }
 
 let screenrecord: ScreenrecordState | undefined
+
+const activeUploads = new Map<string, { tempPath: string; received: number }>()
+
+function createUploadId(): string {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
 
 function failure<T>(code: RequestErrorCode, message: string): CommandResult<T> {
   return { ok: false, code, message }
@@ -199,10 +209,10 @@ export default function activate(orca: OrcaWorkerApi): void {
     if (!serial) return failure<Result>('invalid_params', '请选择设备')
     if (!isValidPackageName(pkg)) return failure<Result>('invalid_params', '包名不合法')
     const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
-    const builders = {
-      start: buildStartAppArgs, stop: buildStopAppArgs, clear: buildClearAppDataArgs, uninstall: buildUninstallArgs,
-    }
     try {
+      const builders = {
+        start: buildStartAppArgs, stop: buildStopAppArgs, clear: buildClearAppDataArgs, uninstall: buildUninstallArgs,
+      }
       const output = await runAdb(adbPath, builders[action](serial, pkg))
       return success<Result>({ output: output.trim() })
     } catch (error) {
@@ -210,7 +220,56 @@ export default function activate(orca: OrcaWorkerApi): void {
     }
   })
 
-  // 安装 APK：路径由用户输入（可含空格），作为单个参数传给 adb。
+  // 权限操作（撤销/授予单个权限）：与 appAction 分离，permission 为必填。
+  orca.panels.handle('adb.permissionAction', async ({ serial, action, pkg, permission }) => {
+    type Result = { output: string }
+    if (!serial) return failure<Result>('invalid_params', '请选择设备')
+    if (!isValidPackageName(pkg)) return failure<Result>('invalid_params', '包名不合法')
+    if (!permission || !isValidPackageName(permission)) {
+      return failure<Result>('invalid_params', '权限名不合法（如 android.permission.CAMERA）')
+    }
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      const args = action === 'revoke'
+        ? buildRevokePermissionArgs(serial, pkg, permission)
+        : buildGrantPermissionArgs(serial, pkg, permission)
+      const output = await runAdb(adbPath, args)
+      return success<Result>({ output: output.trim() })
+    } catch (error) {
+      return failure<Result>('action_failed', errorMessage(error))
+    }
+  })
+
+  // 撤销全部运行时权限：先 dumpsys 拿到已授予的 dangerous 权限，再逐个 pm revoke。
+  orca.panels.handle('adb.revokeAllPermissions', async ({ serial, pkg }) => {
+    type Result = { revoked: string[]; failed: string[] }
+    if (!serial) return failure<Result>('invalid_params', '请选择设备')
+    if (!isValidPackageName(pkg)) return failure<Result>('invalid_params', '包名不合法')
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    try {
+      // dumpsys 输出较大，用 runAdbBuffer 承载
+      const dump = await runAdbBuffer(adbPath, buildDumpPackageArgs(serial, pkg))
+      const perms = parseGrantedRuntimePermissions(dump.toString())
+      if (perms.length === 0) {
+        return success<Result>({ revoked: [], failed: [] })
+      }
+      const revoked: string[] = []
+      const failed: string[] = []
+      for (const perm of perms) {
+        try {
+          await runAdb(adbPath, buildRevokePermissionArgs(serial, pkg, perm))
+          revoked.push(perm)
+        } catch {
+          failed.push(perm)
+        }
+      }
+      return success<Result>({ revoked, failed })
+    } catch (error) {
+      return failure<Result>('action_failed', errorMessage(error))
+    }
+  })
+
+  // 安装 APK：用户输入路径，或 panel 选择文件后传 base64，作为单个参数传给 adb。
   orca.panels.handle('adb.installApk', async ({ serial, apkPath }) => {
     type Result = { output: string }
     if (!serial) return failure<Result>('invalid_params', '请选择设备')
@@ -222,6 +281,57 @@ export default function activate(orca: OrcaWorkerApi): void {
     } catch (error) {
       return failure<Result>('action_failed', `安装失败：${errorMessage(error)}`)
     }
+  })
+
+  orca.panels.handle('adb.installApkUploadStart', async ({ fileName }) => {
+    const safeName = typeof fileName === 'string' && fileName.trim() ? fileName.trim() : 'app.apk'
+    const uploadId = createUploadId()
+    activeUploads.set(uploadId, {
+      tempPath: join(tmpdir(), `adb-helper-${uploadId}-${safeName}`),
+      received: 0,
+    })
+    return { uploadId }
+  })
+
+  orca.panels.handle('adb.installApkUploadChunk', async ({ uploadId, base64 }) => {
+    const upload = activeUploads.get(uploadId)
+    if (!upload) throw new Error('upload expired')
+    if (!base64 || typeof base64 !== 'string') throw new Error('empty chunk')
+    const bytes = Buffer.from(base64, 'base64')
+    const handle = await open(upload.tempPath, 'a')
+    try {
+      await handle.write(bytes)
+    } finally {
+      await handle.close()
+    }
+    upload.received += bytes.length
+    return { received: upload.received }
+  })
+
+  orca.panels.handle('adb.installApkUploadFinish', async ({ uploadId, serial }) => {
+    type Result = { output: string }
+    const upload = activeUploads.get(uploadId)
+    if (!upload) return failure<Result>('invalid_params', '上传会话已过期')
+    if (!serial) return failure<Result>('invalid_params', '请选择设备')
+    try {
+      const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+      const output = await runAdb(adbPath, buildInstallApkArgs(serial, upload.tempPath))
+      return success<Result>({ output: output.trim() })
+    } catch (error) {
+      return failure<Result>('action_failed', `安装失败：${errorMessage(error)}`)
+    } finally {
+      activeUploads.delete(uploadId)
+      await unlink(upload.tempPath).catch(() => undefined)
+    }
+  })
+
+  orca.panels.handle('adb.installApkUploadCancel', async ({ uploadId }) => {
+    const upload = activeUploads.get(uploadId)
+    if (upload) {
+      activeUploads.delete(uploadId)
+      await unlink(upload.tempPath).catch(() => undefined)
+    }
+    return { cancelled: true as const }
   })
 
   // 无线连接历史读取。

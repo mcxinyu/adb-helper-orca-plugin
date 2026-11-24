@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Locale } from './i18n'
 import { connectDevice, connectHistory, disconnectDevice, type CommandResult } from './orcaApi'
+import type { DeviceInfo } from './orcaApi'
 
 interface Strings {
-  tabWireless: string
   wirelessInput: string
   wirelessConnect: string
   wirelessDisconnect: string
   wirelessHistory: string
   wirelessNoHistory: string
+  wirelessCurrent: string
+  wirelessNoCurrent: string
   wirelessInvalid: string
   wirelessResult: string
   wirelessBusy: string
@@ -17,10 +19,11 @@ interface Strings {
 interface Props {
   locale: Locale
   s: Strings
+  devices: DeviceInfo[]
   onConnected: () => void
 }
 
-export default function WirelessTab({ s, onConnected }: Props) {
+export default function WirelessTab({ s, devices, onConnected }: Props) {
   const [target, setTarget] = useState('')
   const [history, setHistory] = useState<string[]>([])
   const [result, setResult] = useState('')
@@ -32,7 +35,6 @@ export default function WirelessTab({ s, onConnected }: Props) {
   }, [])
   useEffect(() => { void loadHistory() }, [loadHistory])
 
-  // 前端先做格式校验，与 worker 一致。
   const valid = /^(\d{1,3}\.){3}\d{1,3}:\d{1,5}$/.test(target) &&
     target.split(':')[0].split('.').every((p) => Number(p) <= 255) &&
     Number(target.split(':')[1]) > 0 && Number(target.split(':')[1]) <= 65535
@@ -44,15 +46,18 @@ export default function WirelessTab({ s, onConnected }: Props) {
       const r: CommandResult<{ output: string }> = disconnect ? await disconnectDevice(t) : await connectDevice(t)
       if (r.ok) {
         setResult(r.value.output || (disconnect ? 'disconnected' : 'connected'))
-        if (!disconnect) { onConnected(); await loadHistory() }
+        onConnected()
+        if (!disconnect) await loadHistory()
       } else setError(r.message)
     } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setBusy(false) }
   }, [onConnected, loadHistory])
 
+  // 无线设备：serial 含 IP:端口 形式。
+  const wirelessDevices = devices.filter((d) => d.serial.includes(':'))
+
   return (
-    <section>
-      <h2>{s.tabWireless}</h2>
+    <div className="wireless-panel">
       <label className="ask-field install-field">
         <span>{s.wirelessInput}</span>
         <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="192.168.1.100:5555" />
@@ -62,7 +67,19 @@ export default function WirelessTab({ s, onConnected }: Props) {
         <button onClick={() => void doAction(false, target)} disabled={busy || !valid}>{busy ? s.wirelessBusy : s.wirelessConnect}</button>
         <button onClick={() => void doAction(true, target)} disabled={busy || !valid}>{s.wirelessDisconnect}</button>
       </div>
-      <h3 className="sub-title">{s.wirelessHistory}</h3>
+
+      <h4 className="sub-title">{s.wirelessCurrent}</h4>
+      {wirelessDevices.length === 0 ? <p className="muted">{s.wirelessNoCurrent}</p> : (
+        <div className="pkg-list">
+          {wirelessDevices.map((d) => (
+            <button key={d.serial} className="pkg-item" onClick={() => setTarget(d.serial)}>
+              {d.serial} <span className={`state state-${d.state}`}>{d.state}</span> {d.model ?? ''}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <h4 className="sub-title">{s.wirelessHistory}</h4>
       {history.length === 0 ? <p className="muted">{s.wirelessNoHistory}</p> : (
         <div className="pkg-list">
           {history.map((h) => (
@@ -72,6 +89,6 @@ export default function WirelessTab({ s, onConnected }: Props) {
       )}
       {error && <p className="error">{error}</p>}
       {result && <pre className="output-block">{s.wirelessResult}: {result}</pre>}
-    </section>
+    </div>
   )
 }
