@@ -36,7 +36,7 @@ body {
 .sub-title { font-size: 12px; margin: 10px 0 6px; color: var(--orca-foreground, #1a1a1a); }
 .record-limit { max-width: 200px; margin: 8px 0; }
 .pkg-list { max-height: 240px; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; margin: 6px 0; }
-.pkg-item { display: block; width: 100%; text-align: left; border: none; background: transparent; color: var(--orca-foreground, #1a1a1a); font-family: monospace; font-size: 11px; padding: 4px 8px; cursor: pointer; }
+.pkg-item { display: block; width: 100%; box-sizing: border-box; text-align: left; border: none; background: transparent; color: var(--orca-foreground, #1a1a1a); font-family: monospace; font-size: 11px; padding: 4px 8px; cursor: pointer; }
 .pkg-item:hover { background: var(--orca-accent-background, rgba(26,115,232,0.12)); }
 .pkg-item.selected { background: var(--orca-accent-background, rgba(26,115,232,0.18)); font-weight: 700; }
 
