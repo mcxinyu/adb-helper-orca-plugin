@@ -35,10 +35,39 @@ body {
 .wireless-panel { padding: 8px; margin: 6px 0; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 6px; background: var(--orca-accent-background, rgba(26,115,232,0.06)); }
 .sub-title { font-size: 12px; margin: 10px 0 6px; color: var(--orca-foreground, #1a1a1a); }
 .record-limit { max-width: 200px; margin: 8px 0; }
-.pkg-list { max-height: 240px; overflow-y: auto; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; margin: 6px 0; }
-.pkg-item { display: block; width: 100%; text-align: left; border: none; background: transparent; color: var(--orca-foreground, #1a1a1a); font-family: monospace; font-size: 11px; padding: 4px 8px; cursor: pointer; }
+.pkg-list { max-height: 240px; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; margin: 6px 0; }
+.pkg-item { display: block; width: 100%; box-sizing: border-box; text-align: left; border: none; background: transparent; color: var(--orca-foreground, #1a1a1a); font-family: monospace; font-size: 11px; padding: 4px 8px; cursor: pointer; }
 .pkg-item:hover { background: var(--orca-accent-background, rgba(26,115,232,0.12)); }
 .pkg-item.selected { background: var(--orca-accent-background, rgba(26,115,232,0.18)); font-weight: 700; }
+
+/* 无线设备行：整行可点（填入地址），右侧带一个“断开”按钮。
+   刻意不用 <button> 包 <button>，避免非法嵌套 HTML。 */
+.wireless-device-row {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-family: monospace; font-size: 11px;
+}
+/* 序列号可收缩，过长省略；不收缩会导致整行撑爆出现横向滚动条 */
+.wireless-device-row .serial {
+  font-weight: 700;
+  color: #000; /* 序列号用黑色，避免主题色/灰阶导致对比不足 */
+  flex: 0 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 型号：紧凑排列，随状态徽标之后；margin-left:auto 把型号连同 ✕ 推到行右，
+   既让断开按钮靠右，又不让型号和 ✕ 之间出现空档 */
+.wireless-device-row .model {
+  flex: 0 1 auto; min-width: 0; margin-left: auto;
+  font-family: inherit; font-size: 11px; font-weight: 400;
+  color: var(--orca-muted, #6a6a6a);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wireless-device-row .small { flex: none; margin-left: 6px; height: 20px; }
+/* 行内断开按钮：图标样式，尽量省横向空间 */
+.wireless-device-row .icon-btn {
+  flex: none; margin-left: 6px;
+  width: 18px; height: 18px; padding: 0;
+  font-size: 11px; line-height: 1; border-radius: 4px;
+}
 .install-field input { width: 100%; box-sizing: border-box; font: inherit; font-size: 11px; padding: 5px 7px; margin: 4px 0; border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px; background: var(--orca-input-background, transparent); color: var(--orca-foreground, #1a1a1a); }
 .apk-dropzone { border: 1px dashed var(--orca-border, rgba(128,128,128,0.6)); border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
 .apk-dropzone.dragging { border-color: var(--orca-accent, #1a73e8); background: var(--orca-accent-background, rgba(26,115,232,0.10)); }
@@ -53,7 +82,9 @@ body {
 .shot-preview { max-width: 100%; max-height: 60vh; object-fit: contain; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; display: block; }
 
 .header { display: flex; align-items: center; justify-content: space-between; }
+.header-left { display: flex; align-items: center; gap: 6px; }
 .header h1 { font-size: 15px; margin: 0; color: var(--orca-foreground, #1a1a1a); }
+.settings-btn:hover { background: var(--orca-accent-background, rgba(26,115,232,0.14)); }
 .lang { font-size: 12px; display: flex; align-items: center; gap: 4px; color: var(--orca-foreground, #1a1a1a); }
 .lang select {
   font-size: 12px; padding: 2px 4px;
@@ -81,6 +112,8 @@ button.small { padding: 2px 6px; font-size: 11px; }
 button.link { border: none; background: none; color: var(--orca-accent, #1a73e8); padding: 2px 0; }
 
 .muted { color: var(--orca-foreground, #1a1a1a); margin: 4px 0; }
+/* 空态提示（如未选择设备）：比 muted 更醒目，引导用户先选设备 */
+.hint { color: var(--orca-muted, #6a6a6a); margin: 4px 0; font-size: 12px; }
 .error { color: var(--orca-danger, #c5221f); font-weight: 700; margin: 4px 0; word-break: break-word; }
 .notice {
   background: var(--orca-accent-background, rgba(26,115,232,0.12));
@@ -112,7 +145,23 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 .detail dd { margin: 0; font-family: monospace; font-weight: 600; }
 
 .logcat-section { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-.logcat-controls { display: flex; gap: 6px; margin-bottom: 6px; flex: none; }
+.logcat-controls { display: flex; gap: 6px; margin-bottom: 6px; flex: none; align-items: center; }
+/* 控制栏内所有按钮统一高度，避免图标按钮与文本按钮错落 */
+.logcat-controls button {
+  height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 8px; line-height: 1; white-space: nowrap; flex: none;
+}
+/* 清除日志：弱化但仍可见的文本按钮（替代原先的图标按钮） */
+.logcat-controls button.muted-btn {
+  background: transparent;
+  border-color: var(--orca-border, rgba(128,128,128,0.6));
+  color: var(--orca-foreground, #1a1a1a);
+  opacity: .8;
+}
+.logcat-controls button.muted-btn:hover:not(:disabled) { opacity: 1; }
+/* 靠右的操作（如“在终端中打开”）：撑开左侧空白，使其贴到控制栏右端 */
+.logcat-controls .push-right { margin-left: auto; }
 .filter {
   width: 100%; box-sizing: border-box; padding: 5px 7px; font: inherit; margin: 4px 0; flex: none;
   border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px;
@@ -211,7 +260,7 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 .ask-dialog { max-height: 92vh; overflow-y: auto; }
 .ask-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
 .ask-field > span { color: var(--orca-foreground, #1a1a1a); }
-.ask-field select, .ask-field textarea {
+.ask-field select, .ask-field textarea, .ask-field input {
   width: 100%; box-sizing: border-box; font: inherit; font-weight: normal;
   padding: 6px 8px; border-radius: 5px;
   border: 1px solid var(--orca-border, rgba(128,128,128,0.6));
@@ -219,13 +268,17 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
   color: var(--orca-foreground, #1a1a1a);
 }
 .ask-field select { font-size: 12px; }
+.field-hint { font-size: 11px; font-weight: 400; color: var(--orca-muted, #6a6a6a); }
+.settings-dialog { max-height: 92vh; overflow-y: auto; }
 .ask-text, .ask-prompt { font-family: ui-monospace, Consolas, monospace; font-size: 11px; resize: vertical; }
 .ask-text { min-height: 56px; max-height: 140px; }
 .ask-prompt { min-height: 84px; max-height: 200px; }
 .ask-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 button.primary {
-  background: var(--orca-accent, #1a73e8); color: #fff;
-  border-color: var(--orca-accent, #1a73e8); font-weight: 700;
+  /* 用 Orca 的 primary 令牌：浅色主题为深底浅字、深色主题为浅底深字，始终清晰有轮廓。 */
+  background: var(--orca-primary, #1a73e8);
+  color: var(--orca-primary-foreground, #fff);
+  border-color: var(--orca-primary, #1a73e8); font-weight: 700;
 }
 
 

@@ -15,13 +15,16 @@ import {
   listSessions,
   onDevicesChanged,
   onLogcatState,
+  openLogcatTerminal,
   pollLogcat,
   setLocale,
   startLogcat,
   stopLogcat,
+  updateSettings,
   type AgentOption,
   type SessionOption,
   type CommandResult,
+  type PluginConfig,
   type DeviceChangedPayload,
   type DeviceDetail,
   type DeviceInfo,
@@ -67,6 +70,15 @@ export default function App() {
   const [askPrompt, setAskPrompt] = useState<string>('')
   const [askBusy, setAskBusy] = useState<boolean>(false)
   const [manualCopyText, setManualCopyText] = useState<string>('')
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false)
+  const [settingsBusy, setSettingsBusy] = useState<boolean>(false)
+  const [settingsError, setSettingsError] = useState<string>('')
+  const [settingsDraft, setSettingsDraft] = useState<PluginConfig>({
+    locale: 'zh-CN',
+    adbPath: 'adb',
+    logcatTag: '',
+    askAgent: 'opencode',
+  })
   const logViewportRef = useRef<HTMLDivElement | null>(null)
   const autoScrollRef = useRef<boolean>(true)
   const [atBottom, setAtBottom] = useState<boolean>(true)
@@ -198,6 +210,27 @@ export default function App() {
     }
   }, [])
 
+  // 在 Orca 中打开一个独立终端运行 logcat 并聚焦该 Tab；与面板内轮询视图互不影响。
+  const handleOpenInTerminal = useCallback(async () => {
+    if (!selectedSerial) {
+      setNotice(s.selectDeviceHint)
+      return
+    }
+    try {
+      const result = await openLogcatTerminal(selectedSerial)
+      if (result.ok) {
+        setLogcatError('')
+        setNotice(result.value.focused
+          ? s.openInTerminalFocused
+          : s.openInTerminalHint)
+      } else {
+        setLogcatError(result.message)
+      }
+    } catch (error) {
+      setLogcatError(error instanceof Error ? error.message : String(error))
+    }
+  }, [selectedSerial, s.selectDeviceHint, s.openInTerminalFocused, s.openInTerminalHint])
+
   const handleLocaleChange = useCallback(async (next: Locale) => {
     setLocaleState(next)
     try {
@@ -206,6 +239,45 @@ export default function App() {
       // 即使持久化失败也立即生效。
     }
   }, [])
+
+  // 打开设置对话框：先显示，再读取当前配置作为草稿（与 Orca 设置页同一份配置）。
+  // 读取失败也打开，用默认草稿并把错误显示在对话框内。
+  const openSettings = useCallback(async () => {
+    setSettingsOpen(true)
+    setSettingsError('')
+    try {
+      const config = await getConfig()
+      setSettingsDraft(config)
+    } catch (error) {
+      setSettingsError(error instanceof Error ? error.message : String(error))
+    }
+  }, [])
+
+  // 保存设置：写入草稿值；locale 变化时同步更新面板语言。
+  const saveSettings = useCallback(async () => {
+    if (settingsBusy) return
+    setSettingsBusy(true)
+    setSettingsError('')
+    try {
+      const updated = await updateSettings({
+        adbPath: settingsDraft.adbPath.trim(),
+        locale: settingsDraft.locale,
+        logcatTag: settingsDraft.logcatTag.trim(),
+        askAgent: settingsDraft.askAgent.trim(),
+      })
+      setSettingsDraft(updated)
+      // 语言变化时立即让整个面板切换语言（持久化已在 updateSettings 完成）。
+      if (updated.locale === 'zh-CN' || updated.locale === 'en') {
+        setLocaleState(updated.locale as Locale)
+      }
+      setSettingsOpen(false)
+      setNotice(s.settingsSaved)
+    } catch (error) {
+      setSettingsError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setSettingsBusy(false)
+    }
+  }, [settingsBusy, settingsDraft, s.settingsSaved])
 
   const visibleLogs = useMemo(() => {
     if (!filter.trim()) return logs
@@ -435,7 +507,17 @@ export default function App() {
   return (
     <div className="adb-helper">
       <header className="header">
-        <h1>{s.appTitle}</h1>
+        <div className="header-left">
+          <h1>{s.appTitle}</h1>
+          <button
+            className="icon-btn settings-btn"
+            onClick={() => void openSettings()}
+            title={s.settingsButton}
+            aria-label={s.settingsButton}
+          >
+            ⚙
+          </button>
+        </div>
         <label className="lang">
           {s.languageLabel}
           <select value={locale} onChange={(e) => void handleLocaleChange(e.target.value as Locale)}>
@@ -529,7 +611,8 @@ export default function App() {
         <div className="section-header">
           <h2>{s.logcatTitle}</h2>
           <span className={`state state-logcat-${logcatState}`}>
-            {logcatState === 'active' ? s.logcatActive
+            {!selectedSerial ? s.selectDeviceHint
+              : logcatState === 'active' ? s.logcatActive
               : logcatState === 'starting' ? s.logcatStarting
               : logcatState === 'error' ? s.logcatError
               : s.logcatIdle}
@@ -542,7 +625,12 @@ export default function App() {
           <button onClick={() => void handleStop()} disabled={logcatState !== 'active' && logcatState !== 'starting'}>
             {s.stopLogcat}
           </button>
-          <button className="icon-btn" onClick={handleClearLogs} title={s.clearLogs} aria-label={s.clearLogs}>🗑</button>
+          <button className="muted-btn" onClick={handleClearLogs} disabled={logs.length === 0} title={s.clearLogs}>
+            {s.clearLogs}
+          </button>
+          <button className="push-right" onClick={() => void handleOpenInTerminal()} disabled={!selectedSerial} title={s.openInTerminalTooltip}>
+            {s.openInTerminal}
+          </button>
         </div>
         {logcatError && <p className="error">{logcatError}</p>}
         <input
@@ -570,7 +658,9 @@ export default function App() {
             onMouseUp={handleCaptureSelection}
             onKeyUp={handleCaptureSelection}
           >
-            {visibleLogs.length === 0 ? (
+            {!selectedSerial ? (
+              <p className="hint">{s.selectDeviceHint}</p>
+            ) : visibleLogs.length === 0 ? (
               <p className="muted">{s.logcatIdle}</p>
             ) : (
               visibleLogs.map((entry, index) => {
@@ -688,6 +778,74 @@ export default function App() {
               <button onClick={closeAskDialog} disabled={askBusy}>{s.cancelLabel}</button>
               <button className="primary" onClick={() => void submitAsk()} disabled={askBusy || !askAgentId || !askPrompt.trim()}>
                 {askBusy ? s.askAiBusy : s.sendLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="modal-backdrop" onClick={() => !settingsBusy && setSettingsOpen(false)}>
+          <div className="modal settings-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <strong>⚙ {s.settingsTitle}</strong>
+              <button className="icon-btn" onClick={() => !settingsBusy && setSettingsOpen(false)} aria-label={s.closeLabel}>✕</button>
+            </div>
+
+            <label className="ask-field">
+              <span>{s.settingsAdbPath}</span>
+              <input
+                type="text"
+                value={settingsDraft.adbPath}
+                onChange={(e) => setSettingsDraft({ ...settingsDraft, adbPath: e.target.value })}
+                disabled={settingsBusy}
+                spellCheck={false}
+              />
+              <span className="field-hint">{s.settingsAdbPathHint}</span>
+            </label>
+
+            <label className="ask-field">
+              <span>{s.settingsLocale}</span>
+              <select
+                value={settingsDraft.locale}
+                onChange={(e) => setSettingsDraft({ ...settingsDraft, locale: e.target.value })}
+                disabled={settingsBusy}
+              >
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+
+            <label className="ask-field">
+              <span>{s.settingsLogcatTag}</span>
+              <input
+                type="text"
+                value={settingsDraft.logcatTag}
+                onChange={(e) => setSettingsDraft({ ...settingsDraft, logcatTag: e.target.value })}
+                disabled={settingsBusy}
+                spellCheck={false}
+              />
+              <span className="field-hint">{s.settingsLogcatTagHint}</span>
+            </label>
+
+            <label className="ask-field">
+              <span>{s.settingsAskAgent}</span>
+              <input
+                type="text"
+                value={settingsDraft.askAgent}
+                onChange={(e) => setSettingsDraft({ ...settingsDraft, askAgent: e.target.value })}
+                disabled={settingsBusy}
+                spellCheck={false}
+              />
+              <span className="field-hint">{s.settingsAskAgentHint}</span>
+            </label>
+
+            {settingsError && <p className="error">{settingsError}</p>}
+
+            <div className="ask-actions">
+              <button onClick={() => setSettingsOpen(false)} disabled={settingsBusy}>{s.cancelLabel}</button>
+              <button className="primary" onClick={() => void saveSettings()} disabled={settingsBusy}>
+                {s.settingsSave}
               </button>
             </div>
           </div>

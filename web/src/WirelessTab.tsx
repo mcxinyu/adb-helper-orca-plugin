@@ -14,6 +14,8 @@ interface Strings {
   wirelessInvalid: string
   wirelessResult: string
   wirelessBusy: string
+  wirelessRowHint: string
+  wirelessDisconnectRow: string
 }
 
 interface Props {
@@ -29,6 +31,8 @@ export default function WirelessTab({ s, devices, onConnected }: Props) {
   const [result, setResult] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  // 正在执行断开的无线设备 serial（行内“断开”按钮单独置灰，避免与顶部按钮共用 busy）。
+  const [disconnecting, setDisconnecting] = useState('')
 
   const loadHistory = useCallback(async () => {
     try { const r = await connectHistory(); setHistory(r.history) } catch { /* 忽略 */ }
@@ -53,6 +57,21 @@ export default function WirelessTab({ s, devices, onConnected }: Props) {
     finally { setBusy(false) }
   }, [onConnected, loadHistory])
 
+  // 行内“断开”：直接对当前设备断开，不受顶部输入框格式校验限制。
+  const disconnectRow = useCallback(async (serial: string) => {
+    setTarget(serial)
+    setDisconnecting(serial)
+    setError('')
+    try {
+      const r = await disconnectDevice(serial)
+      setResult(r.ok ? (r.value.output || 'disconnected') : '')
+      if (!r.ok) setError(r.message)
+      onConnected()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally { setDisconnecting('') }
+  }, [onConnected])
+
   // 无线设备：serial 含 IP:端口 形式。
   const wirelessDevices = devices.filter((d) => d.serial.includes(':'))
 
@@ -72,9 +91,27 @@ export default function WirelessTab({ s, devices, onConnected }: Props) {
       {wirelessDevices.length === 0 ? <p className="muted">{s.wirelessNoCurrent}</p> : (
         <div className="pkg-list">
           {wirelessDevices.map((d) => (
-            <button key={d.serial} className="pkg-item" onClick={() => setTarget(d.serial)}>
-              {d.serial} <span className={`state state-${d.state}`}>{d.state}</span> {d.model ?? ''}
-            </button>
+            // 行本身可点（填入输入框），右侧“断开”按钮用 stopPropagation 避免触发填充。
+            // 这里刻意不用 <button> 包 <button>，避免产生非法嵌套 HTML。
+            <div
+              key={d.serial}
+              className="pkg-item wireless-device-row"
+              onClick={() => setTarget(d.serial)}
+              title={s.wirelessRowHint}
+            >
+              <span className="serial">{d.serial}</span>
+              <span className={`state state-${d.state}`}>{d.state}</span>
+              <span className="model">{d.model ?? ''}</span>
+              <button
+                className="icon-btn small"
+                title={s.wirelessDisconnectRow}
+                aria-label={s.wirelessDisconnectRow}
+                disabled={busy || disconnecting === d.serial}
+                onClick={(e) => { e.stopPropagation(); void disconnectRow(d.serial) }}
+              >
+                ✕
+              </button>
+            </div>
           ))}
         </div>
       )}

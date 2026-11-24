@@ -107,6 +107,13 @@ async function pickWorkspaceId(orca: OrcaWorkerApi): Promise<string | undefined>
   return workspaces.find((w) => w.hostId === null)?.id ?? workspaces[0]?.id
 }
 
+/** 拼出 `adb -s <serial> logcat [-s <tag>]` 的命令行文本，供终端模式与“在终端中打开”复用。 */
+function buildLogcatCommand(adbPath: string, serial: string, tag: string): string {
+  const args = ['-s', serial, 'logcat']
+  if (tag.trim()) args.push('-s', tag.trim())
+  return `${quoteForShell(adbPath)} ${args.join(' ')}`
+}
+
 /** 关闭当前 logcat 终端（若存在）。 */
 async function closeLogcatTerminal(orca: OrcaWorkerApi): Promise<void> {
   const terminalId = await getStorageString(orca, STORAGE_KEYS.logcatTerminalId)
@@ -143,11 +150,28 @@ export default function activate(orca: OrcaWorkerApi): void {
     locale: await getSetting(orca, SETTINGS.locale, 'zh-CN'),
     adbPath: await getSetting(orca, SETTINGS.adbPath, 'adb'),
     logcatTag: await getSetting(orca, SETTINGS.logcatTag, ''),
+    askAgent: await getSetting(orca, SETTINGS.askAgent, DEFAULT_AGENT),
   }))
 
   orca.panels.handle('adb.setLocale', async ({ locale }) => {
     await orca.settings.set(SETTINGS.locale, locale)
     return { locale }
+  })
+
+  // 面板内设置对话框：写入传入的键，再返回最新的完整配置。
+  // 只写非 undefined 的键，未传的键保持不变（与 Orca 设置页共用同一份配置）。
+  orca.panels.handle('adb.updateSettings', async (input) => {
+    const next = input ?? {}
+    if (next.adbPath !== undefined) await orca.settings.set(SETTINGS.adbPath, next.adbPath)
+    if (next.locale !== undefined) await orca.settings.set(SETTINGS.locale, next.locale)
+    if (next.logcatTag !== undefined) await orca.settings.set(SETTINGS.logcatTag, next.logcatTag)
+    if (next.askAgent !== undefined) await orca.settings.set(SETTINGS.askAgent, next.askAgent)
+    return {
+      locale: await getSetting(orca, SETTINGS.locale, 'zh-CN'),
+      adbPath: await getSetting(orca, SETTINGS.adbPath, 'adb'),
+      logcatTag: await getSetting(orca, SETTINGS.logcatTag, ''),
+      askAgent: await getSetting(orca, SETTINGS.askAgent, DEFAULT_AGENT),
+    }
   })
 
   // 设备发现：主路径 + 终端回退，并把结果推送给所有面板。
@@ -465,9 +489,7 @@ export default function activate(orca: OrcaWorkerApi): void {
 
     const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
     const tag = await getSetting(orca, SETTINGS.logcatTag, '')
-    const args = ['-s', serial, 'logcat']
-    if (tag.trim()) args.push('-s', tag.trim())
-    const command = `${quoteForShell(adbPath)} ${args.join(' ')}`
+    const command = buildLogcatCommand(adbPath, serial, tag)
 
     try {
       const { terminalId } = await orca.host.call('terminal.create', {
@@ -548,6 +570,48 @@ export default function activate(orca: OrcaWorkerApi): void {
       state: 'active' as const,
       serial: serial ?? '',
     })
+  })
+
+  // 在 Orca 中打开一个独立终端运行 logcat 并聚焦该 Tab。
+  // 与 startLogcat 的“受追踪终端”分离：这里不覆盖 storage 里的 logcatTerminalId，
+  // 因此面板内的轮询视图不会被替换；“停止 logcat”仍只关闭受追踪的那个终端。
+  orca.panels.handle('adb.openLogcatTerminal', async ({ serial }) => {
+    type OpenResult = { terminalId: string; focused: boolean }
+    if (!serial) return failure<OpenResult>('invalid_params', 'serial 不能为空')
+    if (!orca.host.has('terminal.create')) {
+      return failure<OpenResult>('action_failed', '当前 Orca 不支持终端创建')
+    }
+    const workspaceId = await pickWorkspaceId(orca)
+    if (!workspaceId) {
+      return failure<OpenResult>('no_workspace', '没有可用于运行 logcat 的 workspace')
+    }
+    const adbPath = await getSetting(orca, SETTINGS.adbPath, 'adb')
+    const tag = await getSetting(orca, SETTINGS.logcatTag, '')
+    const command = buildLogcatCommand(adbPath, serial, tag)
+
+    let terminalId: string
+    try {
+      const created = await orca.host.call('terminal.create', {
+        workspaceId,
+        title: `ADB logcat · ${serial}`,
+        command,
+      })
+      terminalId = created.terminalId
+    } catch (error) {
+      return failure<OpenResult>('action_failed', `无法在终端中打开 logcat：${errorMessage(error)}`)
+    }
+
+    // 尽量把该终端的 Tab 带到前台；聚焦失败不影响命令已启动这一事实。
+    let focused = false
+    if (orca.host.has('terminal.focus')) {
+      try {
+        const r = await orca.host.call('terminal.focus', { terminalId })
+        focused = r.focused
+      } catch {
+        focused = false
+      }
+    }
+    return success<OpenResult>({ terminalId, focused })
   })
 
   orca.panels.handle('adb.stopLogcat', async () => {
