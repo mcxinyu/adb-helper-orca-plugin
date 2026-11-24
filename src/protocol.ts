@@ -80,11 +80,16 @@ declare module 'orca' {
       output: CommandResult<{ terminalId: string; focused: boolean; message: string }>
     }
     'adb.getConfig': {
-      output: { locale: string; adbPath: string; logcatTag: string }
+      output: { locale: string; adbPath: string; logcatTag: string; askAgent: string }
     }
     'adb.setLocale': {
       input: { locale: string }
       output: { locale: string }
+    }
+    // 面板内设置对话框保存全部设置（与 Orca 设置页同一份配置）。
+    'adb.updateSettings': {
+      input: { adbPath?: string; locale?: string; logcatTag?: string; askAgent?: string }
+      output: { locale: string; adbPath: string; logcatTag: string; askAgent: string }
     }
     'adb.screenshot': {
       input: { serial: string }

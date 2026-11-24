@@ -53,16 +53,24 @@ function bridge(): PluginBridge {
   return window.orca.plugin
 }
 
-export async function getConfig(): Promise<{ locale: string; adbPath: string; logcatTag: string }> {
-  return (await bridge().request('adb.getConfig')) as {
-    locale: string
-    adbPath: string
-    logcatTag: string
-  }
+export interface PluginConfig {
+  locale: string
+  adbPath: string
+  logcatTag: string
+  askAgent: string
+}
+
+export async function getConfig(): Promise<PluginConfig> {
+  return (await bridge().request('adb.getConfig')) as PluginConfig
 }
 
 export async function setLocale(locale: string): Promise<void> {
   await bridge().request('adb.setLocale', { locale })
+}
+
+/** 保存面板内设置对话框的值；只保存传入的键（与 Orca 设置页同一份配置）。 */
+export async function updateSettings(input: Partial<PluginConfig>): Promise<PluginConfig> {
+  return (await bridge().request('adb.updateSettings', input)) as PluginConfig
 }
 
 export async function listDevices(): Promise<

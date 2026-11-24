@@ -2,12 +2,24 @@ export type Locale = 'zh-CN' | 'en'
 
 export interface Strings {
   appTitle: string
+  settingsButton: string
+  settingsTitle: string
+  settingsAdbPath: string
+  settingsAdbPathHint: string
+  settingsLocale: string
+  settingsLogcatTag: string
+  settingsLogcatTagHint: string
+  settingsAskAgent: string
+  settingsAskAgentHint: string
+  settingsSave: string
+  settingsSaved: string
   refresh: string
   startLogcat: string
   stopLogcat: string
   openInTerminal: string
   openInTerminalFocused: string
   openInTerminalHint: string
+  openInTerminalTooltip: string
   askAi: string
   languageLabel: string
   deviceListTitle: string
@@ -127,12 +139,24 @@ export interface Strings {
 
 const zhCN: Strings = {
   appTitle: 'ADB 助手',
+  settingsButton: '设置',
+  settingsTitle: '插件设置',
+  settingsAdbPath: 'ADB 可执行文件路径',
+  settingsAdbPathHint: '可包含空格；留空使用 PATH 中的 adb。',
+  settingsLocale: '界面语言',
+  settingsLogcatTag: 'logcat 默认过滤标签',
+  settingsLogcatTagHint: '启动 logcat 时附加的 -s 标签过滤，可留空。',
+  settingsAskAgent: '“问 AI”使用的 agent',
+  settingsAskAgentHint: '需为本机已安装且启用的 agent。',
+  settingsSave: '保存',
+  settingsSaved: '设置已保存',
   refresh: '刷新设备',
   startLogcat: '开始 logcat',
   stopLogcat: '停止 logcat',
   openInTerminal: '在终端中打开',
   openInTerminalFocused: '已在 Orca 终端中打开 logcat',
   openInTerminalHint: '已在 Orca 终端中启动 logcat，请在 Orca 中查看该终端',
+  openInTerminalTooltip: '在 Orca 终端页运行 logcat（不影响面板内的日志视图）',
   askAi: '问 AI',
   languageLabel: '语言',
   deviceListTitle: '设备',
@@ -252,12 +276,24 @@ const zhCN: Strings = {
 
 const en: Strings = {
   appTitle: 'ADB Helper',
+  settingsButton: 'Settings',
+  settingsTitle: 'Plugin Settings',
+  settingsAdbPath: 'ADB executable path',
+  settingsAdbPathHint: 'May contain spaces; leave empty to use adb from PATH.',
+  settingsLocale: 'UI language',
+  settingsLogcatTag: 'Default logcat filter tag',
+  settingsLogcatTagHint: 'A -s tag filter appended when starting logcat; may be empty.',
+  settingsAskAgent: 'Agent for "Ask AI"',
+  settingsAskAgentHint: 'Must be an agent installed and enabled on this machine.',
+  settingsSave: 'Save',
+  settingsSaved: 'Settings saved',
   refresh: 'Refresh devices',
   startLogcat: 'Start logcat',
   stopLogcat: 'Stop logcat',
   openInTerminal: 'Open in terminal',
   openInTerminalFocused: 'logcat is running in an Orca terminal',
   openInTerminalHint: 'logcat started in an Orca terminal; open it in Orca to read the output',
+  openInTerminalTooltip: 'Run logcat in an Orca terminal (the panel log view is unaffected)',
   askAi: 'Ask AI',
   languageLabel: 'Language',
   deviceListTitle: 'Devices',

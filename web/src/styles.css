@@ -53,7 +53,9 @@ body {
 .shot-preview { max-width: 100%; max-height: 60vh; object-fit: contain; border: 1px solid var(--orca-border, rgba(128,128,128,0.5)); border-radius: 5px; display: block; }
 
 .header { display: flex; align-items: center; justify-content: space-between; }
+.header-left { display: flex; align-items: center; gap: 6px; }
 .header h1 { font-size: 15px; margin: 0; color: var(--orca-foreground, #1a1a1a); }
+.settings-btn:hover { background: var(--orca-accent-background, rgba(26,115,232,0.14)); }
 .lang { font-size: 12px; display: flex; align-items: center; gap: 4px; color: var(--orca-foreground, #1a1a1a); }
 .lang select {
   font-size: 12px; padding: 2px 4px;
@@ -117,18 +119,18 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 .logcat-controls button {
   height: 26px;
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 0 8px; line-height: 1; white-space: nowrap;
+  padding: 0 8px; line-height: 1; white-space: nowrap; flex: none;
 }
-/* 清除日志：与其他按钮同高度的弱化文本按钮（替代原先的图标按钮） */
+/* 清除日志：弱化但仍可见的文本按钮（替代原先的图标按钮） */
 .logcat-controls button.muted-btn {
   background: transparent;
-  border-color: transparent;
-  color: var(--orca-muted, #6a6a6a);
-}
-.logcat-controls button.muted-btn:hover:not(:disabled) {
   border-color: var(--orca-border, rgba(128,128,128,0.6));
   color: var(--orca-foreground, #1a1a1a);
+  opacity: .8;
 }
+.logcat-controls button.muted-btn:hover:not(:disabled) { opacity: 1; }
+/* 靠右的操作（如“在终端中打开”）：撑开左侧空白，使其贴到控制栏右端 */
+.logcat-controls .push-right { margin-left: auto; }
 .filter {
   width: 100%; box-sizing: border-box; padding: 5px 7px; font: inherit; margin: 4px 0; flex: none;
   border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px;
@@ -227,7 +229,7 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 .ask-dialog { max-height: 92vh; overflow-y: auto; }
 .ask-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
 .ask-field > span { color: var(--orca-foreground, #1a1a1a); }
-.ask-field select, .ask-field textarea {
+.ask-field select, .ask-field textarea, .ask-field input {
   width: 100%; box-sizing: border-box; font: inherit; font-weight: normal;
   padding: 6px 8px; border-radius: 5px;
   border: 1px solid var(--orca-border, rgba(128,128,128,0.6));
@@ -235,12 +237,15 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
   color: var(--orca-foreground, #1a1a1a);
 }
 .ask-field select { font-size: 12px; }
+.field-hint { font-size: 11px; font-weight: 400; color: var(--orca-muted, #6a6a6a); }
+.settings-dialog { max-height: 92vh; overflow-y: auto; }
 .ask-text, .ask-prompt { font-family: ui-monospace, Consolas, monospace; font-size: 11px; resize: vertical; }
 .ask-text { min-height: 56px; max-height: 140px; }
 .ask-prompt { min-height: 84px; max-height: 200px; }
 .ask-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 button.primary {
-  background: var(--orca-accent, #1a73e8); color: #fff;
+  background: var(--orca-accent, #1a73e8);
+  color: var(--orca-accent-foreground, #fff);
   border-color: var(--orca-accent, #1a73e8); font-weight: 700;
 }
 

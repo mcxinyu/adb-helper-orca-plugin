@@ -150,11 +150,28 @@ export default function activate(orca: OrcaWorkerApi): void {
     locale: await getSetting(orca, SETTINGS.locale, 'zh-CN'),
     adbPath: await getSetting(orca, SETTINGS.adbPath, 'adb'),
     logcatTag: await getSetting(orca, SETTINGS.logcatTag, ''),
+    askAgent: await getSetting(orca, SETTINGS.askAgent, DEFAULT_AGENT),
   }))
 
   orca.panels.handle('adb.setLocale', async ({ locale }) => {
     await orca.settings.set(SETTINGS.locale, locale)
     return { locale }
+  })
+
+  // 面板内设置对话框：写入传入的键，再返回最新的完整配置。
+  // 只写非 undefined 的键，未传的键保持不变（与 Orca 设置页共用同一份配置）。
+  orca.panels.handle('adb.updateSettings', async (input) => {
+    const next = input ?? {}
+    if (next.adbPath !== undefined) await orca.settings.set(SETTINGS.adbPath, next.adbPath)
+    if (next.locale !== undefined) await orca.settings.set(SETTINGS.locale, next.locale)
+    if (next.logcatTag !== undefined) await orca.settings.set(SETTINGS.logcatTag, next.logcatTag)
+    if (next.askAgent !== undefined) await orca.settings.set(SETTINGS.askAgent, next.askAgent)
+    return {
+      locale: await getSetting(orca, SETTINGS.locale, 'zh-CN'),
+      adbPath: await getSetting(orca, SETTINGS.adbPath, 'adb'),
+      logcatTag: await getSetting(orca, SETTINGS.logcatTag, ''),
+      askAgent: await getSetting(orca, SETTINGS.askAgent, DEFAULT_AGENT),
+    }
   })
 
   // 设备发现：主路径 + 终端回退，并把结果推送给所有面板。
