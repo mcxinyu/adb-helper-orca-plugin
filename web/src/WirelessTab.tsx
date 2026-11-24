@@ -15,6 +15,7 @@ interface Strings {
   wirelessResult: string
   wirelessBusy: string
   wirelessRowHint: string
+  wirelessDisconnectRow: string
 }
 
 interface Props {
@@ -102,11 +103,13 @@ export default function WirelessTab({ s, devices, onConnected }: Props) {
               <span className={`state state-${d.state}`}>{d.state}</span>
               <span className="model">{d.model ?? ''}</span>
               <button
-                className="small"
+                className="icon-btn small"
+                title={s.wirelessDisconnectRow}
+                aria-label={s.wirelessDisconnectRow}
                 disabled={busy || disconnecting === d.serial}
                 onClick={(e) => { e.stopPropagation(); void disconnectRow(d.serial) }}
               >
-                {disconnecting === d.serial ? s.wirelessBusy : s.wirelessDisconnect}
+                ✕
               </button>
             </div>
           ))}

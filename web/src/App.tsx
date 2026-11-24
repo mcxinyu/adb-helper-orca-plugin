@@ -611,7 +611,8 @@ export default function App() {
         <div className="section-header">
           <h2>{s.logcatTitle}</h2>
           <span className={`state state-logcat-${logcatState}`}>
-            {logcatState === 'active' ? s.logcatActive
+            {!selectedSerial ? s.selectDeviceHint
+              : logcatState === 'active' ? s.logcatActive
               : logcatState === 'starting' ? s.logcatStarting
               : logcatState === 'error' ? s.logcatError
               : s.logcatIdle}
@@ -657,7 +658,9 @@ export default function App() {
             onMouseUp={handleCaptureSelection}
             onKeyUp={handleCaptureSelection}
           >
-            {visibleLogs.length === 0 ? (
+            {!selectedSerial ? (
+              <p className="hint">{s.selectDeviceHint}</p>
+            ) : visibleLogs.length === 0 ? (
               <p className="muted">{s.logcatIdle}</p>
             ) : (
               visibleLogs.map((entry, index) => {

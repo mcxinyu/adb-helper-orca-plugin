@@ -52,6 +52,12 @@ body {
   font-weight: 400; color: var(--orca-muted, #6a6a6a);
 }
 .wireless-device-row .small { flex: none; margin-left: 6px; height: 20px; }
+/* 行内断开按钮：图标样式，尽量省横向空间 */
+.wireless-device-row .icon-btn {
+  flex: none; margin-left: 6px;
+  width: 18px; height: 18px; padding: 0;
+  font-size: 11px; line-height: 1; border-radius: 4px;
+}
 .install-field input { width: 100%; box-sizing: border-box; font: inherit; font-size: 11px; padding: 5px 7px; margin: 4px 0; border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px; background: var(--orca-input-background, transparent); color: var(--orca-foreground, #1a1a1a); }
 .apk-dropzone { border: 1px dashed var(--orca-border, rgba(128,128,128,0.6)); border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
 .apk-dropzone.dragging { border-color: var(--orca-accent, #1a73e8); background: var(--orca-accent-background, rgba(26,115,232,0.10)); }
@@ -96,6 +102,8 @@ button.small { padding: 2px 6px; font-size: 11px; }
 button.link { border: none; background: none; color: var(--orca-accent, #1a73e8); padding: 2px 0; }
 
 .muted { color: var(--orca-foreground, #1a1a1a); margin: 4px 0; }
+/* 空态提示（如未选择设备）：比 muted 更醒目，引导用户先选设备 */
+.hint { color: var(--orca-muted, #6a6a6a); margin: 4px 0; font-size: 12px; }
 .error { color: var(--orca-danger, #c5221f); font-weight: 700; margin: 4px 0; word-break: break-word; }
 .notice {
   background: var(--orca-accent-background, rgba(26,115,232,0.12));
@@ -257,9 +265,10 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 .ask-prompt { min-height: 84px; max-height: 200px; }
 .ask-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 button.primary {
-  background: var(--orca-accent, #1a73e8);
-  color: var(--orca-accent-foreground, #fff);
-  border-color: var(--orca-accent, #1a73e8); font-weight: 700;
+  /* 用 Orca 的 primary 令牌：浅色主题为深底浅字、深色主题为浅底深字，始终清晰有轮廓。 */
+  background: var(--orca-primary, #1a73e8);
+  color: var(--orca-primary-foreground, #fff);
+  border-color: var(--orca-primary, #1a73e8); font-weight: 700;
 }
 
 

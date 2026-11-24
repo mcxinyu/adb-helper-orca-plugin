@@ -127,6 +127,7 @@ export interface Strings {
   wirelessResult: string
   wirelessBusy: string
   wirelessRowHint: string
+  wirelessDisconnectRow: string
   cmdNoDevice: string
   cmdDeviceInfo: string
   cmdModel: string
@@ -265,6 +266,7 @@ const zhCN: Strings = {
   wirelessResult: '结果',
   wirelessBusy: '处理中…',
   wirelessRowHint: '点击填入地址；点右侧按钮可直接断开该设备',
+  wirelessDisconnectRow: '断开该设备',
   cmdNoDevice: '请先选择一台在线设备',
   cmdDeviceInfo: 'Android 版本',
   cmdModel: '设备型号',
@@ -403,6 +405,7 @@ const en: Strings = {
   wirelessResult: 'Result',
   wirelessBusy: 'Working…',
   wirelessRowHint: 'Click to fill the address; the right-hand button disconnects this device',
+  wirelessDisconnectRow: 'Disconnect this device',
   cmdNoDevice: 'Select an online device first',
   cmdDeviceInfo: 'Android version',
   cmdModel: 'Device model',
