@@ -5,6 +5,9 @@ export interface Strings {
   refresh: string
   startLogcat: string
   stopLogcat: string
+  openInTerminal: string
+  openInTerminalFocused: string
+  openInTerminalHint: string
   askAi: string
   languageLabel: string
   deviceListTitle: string
@@ -127,6 +130,9 @@ const zhCN: Strings = {
   refresh: '刷新设备',
   startLogcat: '开始 logcat',
   stopLogcat: '停止 logcat',
+  openInTerminal: '在终端中打开',
+  openInTerminalFocused: '已在 Orca 终端中打开 logcat',
+  openInTerminalHint: '已在 Orca 终端中启动 logcat，请在 Orca 中查看该终端',
   askAi: '问 AI',
   languageLabel: '语言',
   deviceListTitle: '设备',
@@ -249,6 +255,9 @@ const en: Strings = {
   refresh: 'Refresh devices',
   startLogcat: 'Start logcat',
   stopLogcat: 'Stop logcat',
+  openInTerminal: 'Open in terminal',
+  openInTerminalFocused: 'logcat is running in an Orca terminal',
+  openInTerminalHint: 'logcat started in an Orca terminal; open it in Orca to read the output',
   askAi: 'Ask AI',
   languageLabel: 'Language',
   deviceListTitle: 'Devices',

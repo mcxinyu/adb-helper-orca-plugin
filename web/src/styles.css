@@ -112,7 +112,23 @@ button.link { border: none; background: none; color: var(--orca-accent, #1a73e8)
 .detail dd { margin: 0; font-family: monospace; font-weight: 600; }
 
 .logcat-section { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-.logcat-controls { display: flex; gap: 6px; margin-bottom: 6px; flex: none; }
+.logcat-controls { display: flex; gap: 6px; margin-bottom: 6px; flex: none; align-items: center; }
+/* 控制栏内所有按钮统一高度，避免图标按钮与文本按钮错落 */
+.logcat-controls button {
+  height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 8px; line-height: 1; white-space: nowrap;
+}
+/* 清除日志：与其他按钮同高度的弱化文本按钮（替代原先的图标按钮） */
+.logcat-controls button.muted-btn {
+  background: transparent;
+  border-color: transparent;
+  color: var(--orca-muted, #6a6a6a);
+}
+.logcat-controls button.muted-btn:hover:not(:disabled) {
+  border-color: var(--orca-border, rgba(128,128,128,0.6));
+  color: var(--orca-foreground, #1a1a1a);
+}
 .filter {
   width: 100%; box-sizing: border-box; padding: 5px 7px; font: inherit; margin: 4px 0; flex: none;
   border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px;

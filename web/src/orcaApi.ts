@@ -86,6 +86,11 @@ export async function stopLogcat(): Promise<CommandResult<{ stopped: true }>> {
   return (await bridge().request('adb.stopLogcat')) as CommandResult<{ stopped: true }>
 }
 
+// 在 Orca 中打开独立终端运行 logcat 并聚焦该 Tab，不影响面板内的轮询视图。
+export async function openLogcatTerminal(serial: string): Promise<CommandResult<{ terminalId: string; focused: boolean }>> {
+  return (await bridge().request('adb.openLogcatTerminal', { serial })) as CommandResult<{ terminalId: string; focused: boolean }>
+}
+
 export interface LogcatPollEntry {
   seq: number
   line: string

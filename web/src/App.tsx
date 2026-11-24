@@ -15,6 +15,7 @@ import {
   listSessions,
   onDevicesChanged,
   onLogcatState,
+  openLogcatTerminal,
   pollLogcat,
   setLocale,
   startLogcat,
@@ -197,6 +198,27 @@ export default function App() {
       setLogcatError(error instanceof Error ? error.message : String(error))
     }
   }, [])
+
+  // 在 Orca 中打开一个独立终端运行 logcat 并聚焦该 Tab；与面板内轮询视图互不影响。
+  const handleOpenInTerminal = useCallback(async () => {
+    if (!selectedSerial) {
+      setNotice(s.selectDeviceHint)
+      return
+    }
+    try {
+      const result = await openLogcatTerminal(selectedSerial)
+      if (result.ok) {
+        setLogcatError('')
+        setNotice(result.value.focused
+          ? s.openInTerminalFocused
+          : s.openInTerminalHint)
+      } else {
+        setLogcatError(result.message)
+      }
+    } catch (error) {
+      setLogcatError(error instanceof Error ? error.message : String(error))
+    }
+  }, [selectedSerial, s.selectDeviceHint, s.openInTerminalFocused, s.openInTerminalHint])
 
   const handleLocaleChange = useCallback(async (next: Locale) => {
     setLocaleState(next)
@@ -542,7 +564,12 @@ export default function App() {
           <button onClick={() => void handleStop()} disabled={logcatState !== 'active' && logcatState !== 'starting'}>
             {s.stopLogcat}
           </button>
-          <button className="icon-btn" onClick={handleClearLogs} title={s.clearLogs} aria-label={s.clearLogs}>🗑</button>
+          <button onClick={() => void handleOpenInTerminal()} disabled={!selectedSerial}>
+            {s.openInTerminal}
+          </button>
+          <button className="muted-btn" onClick={handleClearLogs} disabled={logs.length === 0} title={s.clearLogs}>
+            {s.clearLogs}
+          </button>
         </div>
         {logcatError && <p className="error">{logcatError}</p>}
         <input

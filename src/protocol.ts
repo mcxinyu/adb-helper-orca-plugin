@@ -51,6 +51,10 @@ declare module 'orca' {
       input: { serial: string }
       output: CommandResult<{ started: true }>
     }
+    'adb.openLogcatTerminal': {
+      input: { serial: string }
+      output: CommandResult<{ terminalId: string; focused: boolean }>
+    }
     'adb.stopLogcat': {
       output: CommandResult<{ stopped: true }>
     }
