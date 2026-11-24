@@ -49,12 +49,14 @@ body {
 /* 序列号可收缩，过长省略；不收缩会导致整行撑爆出现横向滚动条 */
 .wireless-device-row .serial {
   font-weight: 700;
+  color: #000; /* 序列号用黑色，避免主题色/灰阶导致对比不足 */
   flex: 0 1 auto; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* 型号：紧凑排列（不撑满剩余宽度），跟随状态徽标之后，✕ 紧跟其后 */
+/* 型号：紧凑排列，随状态徽标之后；margin-left:auto 把型号连同 ✕ 推到行右，
+   既让断开按钮靠右，又不让型号和 ✕ 之间出现空档 */
 .wireless-device-row .model {
-  flex: 0 1 auto; min-width: 0;
+  flex: 0 1 auto; min-width: 0; margin-left: auto;
   font-family: inherit; font-size: 11px; font-weight: 400;
   color: var(--orca-muted, #6a6a6a);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
