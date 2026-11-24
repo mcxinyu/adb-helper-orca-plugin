@@ -126,6 +126,7 @@ export interface Strings {
   wirelessInvalid: string
   wirelessResult: string
   wirelessBusy: string
+  wirelessRowHint: string
   cmdNoDevice: string
   cmdDeviceInfo: string
   cmdModel: string
@@ -263,6 +264,7 @@ const zhCN: Strings = {
   wirelessInvalid: '格式应为 IP:端口（如 192.168.1.100:5555）',
   wirelessResult: '结果',
   wirelessBusy: '处理中…',
+  wirelessRowHint: '点击填入地址；点右侧按钮可直接断开该设备',
   cmdNoDevice: '请先选择一台在线设备',
   cmdDeviceInfo: 'Android 版本',
   cmdModel: '设备型号',
@@ -400,6 +402,7 @@ const en: Strings = {
   wirelessInvalid: 'Format should be IP:port (e.g. 192.168.1.100:5555)',
   wirelessResult: 'Result',
   wirelessBusy: 'Working…',
+  wirelessRowHint: 'Click to fill the address; the right-hand button disconnects this device',
   cmdNoDevice: 'Select an online device first',
   cmdDeviceInfo: 'Android version',
   cmdModel: 'Device model',

@@ -39,6 +39,19 @@ body {
 .pkg-item { display: block; width: 100%; text-align: left; border: none; background: transparent; color: var(--orca-foreground, #1a1a1a); font-family: monospace; font-size: 11px; padding: 4px 8px; cursor: pointer; }
 .pkg-item:hover { background: var(--orca-accent-background, rgba(26,115,232,0.12)); }
 .pkg-item.selected { background: var(--orca-accent-background, rgba(26,115,232,0.18)); font-weight: 700; }
+
+/* 无线设备行：整行可点（填入地址），右侧带一个“断开”按钮。
+   刻意不用 <button> 包 <button>，避免非法嵌套 HTML。 */
+.wireless-device-row {
+  display: flex; align-items: center; gap: 6px;
+  font-family: monospace; font-size: 11px;
+}
+.wireless-device-row .serial { font-weight: 700; }
+.wireless-device-row .model {
+  margin-left: auto; font-family: inherit; font-size: 11px;
+  font-weight: 400; color: var(--orca-muted, #6a6a6a);
+}
+.wireless-device-row .small { flex: none; margin-left: 6px; height: 20px; }
 .install-field input { width: 100%; box-sizing: border-box; font: inherit; font-size: 11px; padding: 5px 7px; margin: 4px 0; border: 1px solid var(--orca-border, rgba(128,128,128,0.6)); border-radius: 5px; background: var(--orca-input-background, transparent); color: var(--orca-foreground, #1a1a1a); }
 .apk-dropzone { border: 1px dashed var(--orca-border, rgba(128,128,128,0.6)); border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
 .apk-dropzone.dragging { border-color: var(--orca-accent, #1a73e8); background: var(--orca-accent-background, rgba(26,115,232,0.10)); }
