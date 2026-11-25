@@ -5,7 +5,16 @@
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [0.4.0] - 2026-11-25
+
+### 变更
+
+- **面板图标**——由终端图标（`terminal`）改为机器人（`bot`），与 ADB / Android 主题更贴合。
+- **构建产物**——修复 0.3.0 发布时面板底部仍显示旧版本号 0.2.0 的问题，面板版本号现随 `package.json` 同步更新。
+
+### 杂务
+
+- 清理误提交的图片文件并补充 `.gitignore`。
 
 ## [0.3.0] - 2026-11-24
 
@@ -55,7 +64,8 @@
 - **命令面板**——Android 版本、型号、电池、第三方应用、IP、内存等白名单快捷命令。
 - 中英文界面切换，面板底部固定显示版本号与编译号。
 
-[Unreleased]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mcxinyu/adb-helper-orca-plugin/releases/tag/v0.1.0
